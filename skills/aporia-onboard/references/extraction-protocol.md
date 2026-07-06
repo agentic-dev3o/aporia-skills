@@ -33,10 +33,12 @@ A bootstrap passes if and only if:
 
 Every extraction is one of two things; conflating them is the root of slop:
 
-- **Observation** — *this table exists; this module imports that one; this route is registered.* Fact → an `as_built` node/edge. Carries no confidence.
-- **Interpretation** — *this is the "Invoice" aggregate; these files are the "Billing" service; this is "Checkout".* Judgment → carries **confidence** and cites **evidence**.
+- **Observation** — *this table exists; this module imports that one; this route is registered.* Fact → an `as_built` node/edge.
+- **Interpretation** — *this is the "Invoice" aggregate; these files are the "Billing" service; this is "Checkout".* Judgment → cites **evidence**.
 
 Your entire value is the interpretation — clustering, naming, dropping, inferring. Serializing the AST produces slop by construction. **Judge.**
+
+**Confidence lives on AUTHORED intent only.** A scanned node — observation or interpretation — carries **no stored confidence**; how sure you are of a *name* or a *cluster* is expressed through the evidence you cite, a note when it's genuinely ambiguous, or choosing to author it as `planned` (intent, not asserted structure) — never a grade stamped on scanned structure. The one place `confidence` is stored is an authored `planned: true` feature (`hypothesis`). And how completely a feature is *built* is not confidence at all: it is **Implementation, derived server-side from binding coverage + open deficiency flags** (D4) — nothing you write into a field can raise or hold it.
 
 > **The hard line: report structure with evidence; never fabricate intent — elicit it.** The *why*, the success criterion, the persona served are not in the code. Where they aren't observable, you **ask** (Phase 5); you do not invent.
 
@@ -50,9 +52,9 @@ Your entire value is the interpretation — clustering, naming, dropping, inferr
 
 **D3 — Domain Language.** Names are what the team *says*, not what the code declares. Sourced in priority: **UI strings → route/page names → public API names → comments & docstrings → README/docs → identifiers** (last resort). `tbl_inv_ln` → "Invoice Line." DDD without knowing DDD, made operational.
 
-**D4 — Evidence + Confidence** *(the anti-hallucination clamp).* Every interpreted node/edge cites `externalRefs` (the files/symbols it derives from — no evidence, no node) and a `confidence`. `confidence` is a **realization grade read from the code** — how completely the repo *builds* the thing — **not** certainty about its *intent*; the two are orthogonal (a feature can be `confirmed`-built with its `intent` still empty). Grade by build-state evidence (the Feature Realization Ladder, D5 below / skill Phase 4): end-to-end on the default path ⇒ `confirmed`; gated or partial ⇒ `provisional`; one-sided, or satisfied by mock/stub/hard-coded data ⇒ `hypothesis`. When a side can't be established, grade **down**. A pure scanned entity/component fact may carry `provisional`/none and still render as confirmed reality. The clamp: never assert a grade you can't cite, and never let the realization grade smuggle in an unstated *why*. The `hypothesis` and `provisional` features are exactly what Phase 5 surfaces to the human — half-baked and conditional, never silently passed off as shipped.
+**D4 — Evidence, not a grade** *(the anti-hallucination clamp).* Every interpreted node/edge cites `externalRefs` (the files/symbols it derives from — no evidence, no node). A scanned node carries **no stored realization grade**. How completely a feature is built is **Implementation, derived server-side from binding coverage + open deficiency flags** — never a value you write into the node; nothing you write into a field can raise or hold it, only structure and flags can. You express what the code shows through *structure*: report the parts that exist `as_built`, and hold a built-but-hollow feature at Partial with an **open `blocksImplementation` note** naming its missing side (D5 below / skill Phase 4). The clamp: never assert structure you can't cite, and never let a scan smuggle in an unstated *why*. The half-baked and mocked features are exactly what Phase 5 surfaces to the human — flagged, never silently passed off as shipped.
 
-**D5 — Intent is Elicited, never Fabricated.** Propose `feature` nodes and their bindings from routes/UI/folders, each carrying a **realization grade read from code** — *The Feature Realization Ladder*: probe the slice for **surface** (a real route/page reached), **logic** (a backend handler/query/mutation it calls), **persistence/IO** (real storage or external system), **data realness** (real values, not `MOCK_*`/fixtures/hard-coded/`TODO`), and **gating** (flag / env / role-or-beta guard / killswitch), then grade — built end-to-end on the default path ⇒ `confirmed`; conditional or one partial seam ⇒ `provisional`; one-sided or mock/stub/hard-coded ⇒ `hypothesis`. What you must **not** fabricate is the **intent** — the *why*, the success criteria, the persona served. Leave `intent: ""` and the arrays empty; that is Phase 5's job. A `confirmed` *build* with an honest empty intent is correct; a feature with a fabricated rationale is worse than one with none.
+**D5 — Intent is Elicited, never Fabricated.** Propose `feature` nodes and their bindings from routes/UI/folders, running **[The Realization Probe](shared/realization-probe.md)** on each — its five signals (surface · logic · persistence/IO · data realness · gating) conclude in one of three actions, never a grade (the full protocol lives in that shared reference). What you must **not** fabricate is the **intent** — the *why*, the success criteria, the persona served. Leave `intent: ""` and the arrays empty; that is Phase 5's job. A fully-wired *build* with an honest empty intent is correct; a feature with a fabricated rationale is worse than one with none.
 
 ---
 
@@ -62,11 +64,11 @@ Each stage gates the next:
 
 1. **Inventory** *(observation, high recall, no judgment)* — schema entities, modules, exports, routes, dependency edges.
 2. **Distill** *(interpretation — D1 filter, D2 grain, D3 language, D4 evidence)* — emit `entity`/`component` nodes + structural edges as `as_built`.
-3. **Propose** *(features + realization grade — D5)* — candidate `feature` nodes + `realized_by`/`touches` bindings, each graded by how completely the code realizes it (the Ladder); `intent` left empty for Phase 5.
+3. **Propose** *(features + the Realization Probe — D5)* — candidate `feature` nodes + `realized_by`/`touches` bindings; the probe reports the structure that exists `as_built` and flags any built-but-hollow feature with an open `blocksImplementation` note; `intent` left empty for Phase 5.
 4. **Elicit** *(§5)* — hand the draft to the human.
 5. **Commit** — push per scope via `apply_scan` (scopeKey + completeScope), reconciled by stable `key`. Re-scans run the same pipeline; identity is the `key`, so refactors and file moves never orphan bound intent.
 
-**Planned features** — a `feature` the product *means* to have but the code does not implement yet (UI scaffolding with no backing logic, an empty route, a "coming soon" surface, a feature the human says to register "to be defined") is **intent, not structure**. This is the floor of the Ladder: no implementation on *either* side. Push it through `apply_scan` with `planned: true` at `hypothesis`: it lands `intended` (not `as_built`) and is exempt from the completeScope sweep, so it survives until a real scan finds it in code and realizes it. (A feature wired on one side only is still `as_built` `hypothesis` — the code *is* there, just half-baked — not `planned`.) Never report an unbuilt surface as `as_built` — that asserts the product ships something it doesn't.
+**Planned features** — a `feature` the product *means* to have but the code does not implement yet (UI scaffolding with no backing logic, an empty route, a "coming soon" surface, a feature the human says to register "to be defined") is **intent, not structure**. This is the probe's third action: no implementation on *either* side. Push it through `apply_scan` with `planned: true` at `confidence: 'hypothesis'`: it lands `intended` (not `as_built`) and is exempt from the completeScope sweep, so it survives until a real scan finds it in code and realizes it. (A feature wired on one side only is still reported `as_built` — the code *is* there, just half-baked — held at Partial by a `blocksImplementation` flag, not `planned`.) Never report an unbuilt surface as `as_built` — that asserts the product ships something it doesn't.
 
 ---
 
@@ -89,7 +91,7 @@ You may read the repo's own README/PRDs/`docs/` to enrich proposals before askin
 |---|---|---|
 | Produces | `as_built` **structure** | `intended` **intent** |
 | Method | observe, then interpret with evidence | draft, then elicit and confirm |
-| Confidence | `confirmed` for **realization** the code proves end-to-end | the human owns **intent** (why / criteria / persona) |
+| Realization / confidence | coverage-derived from `as_built` bindings + `blocksImplementation` flags — **no stored grade** | `confidence` rides only authored intent (a `planned` feature ⇒ `hypothesis`) |
 | Never does | fabricate intent | invent structure the code doesn't have |
 
 Structure flows from the code; intent flows from the team. The map's honesty is that the two are kept distinct and bound by `key`, not smeared together.
@@ -103,13 +105,13 @@ Structure flows from the code; intent flows from the team. The map's honesty is 
 - [ ] No node type exceeds ~30 per scope without justification (D2).
 - [ ] Every node uses domain language, not raw identifiers (D3).
 - [ ] Every node cites `externalRefs`; nothing ungrounded (D4).
-- [ ] Every feature carries a realization grade earned from code (built ⇒ confirmed · gated ⇒ provisional · half-baked ⇒ hypothesis); none blanket-stamped (D4).
+- [ ] Every feature reports true structure — built parts `as_built`, every half-baked / mocked feature carries an open `blocksImplementation` flag citing its missing side (no mock reads Implemented); none blanket-pushed `planned` (D4/D5).
 - [ ] No intent was fabricated; every *why* traces to a human answer or is an open question (D5).
-- [ ] Each realization grade cites its deciding evidence (the gate, the missing side, the mock); `hypothesis`/`provisional` features surfaced in Phase 5, none asserted blind.
+- [ ] Each `blocksImplementation` flag cites its deciding evidence (the missing side, the mock, the `TODO`); the half-baked / mocked features were surfaced in Phase 5, none asserted as shipped.
 - [ ] Corrections were captured as decisions/tensions, not silently applied.
 
 ## 8. Anti-Patterns (reject)
 
-The raw import graph as edges · one node per file/function/table · entities named after DB tables or code symbols · a `feature` invented with a confident rationale nobody stated · **every `feature` stamped `hypothesis` no matter how completely the code builds it** (the grade is read from code, not defaulted) · "User Management", "Settings", "Core", "Utils" as features · a 200-node first map "for completeness" · 40 questions instead of a draft to react to.
+The raw import graph as edges · one node per file/function/table · entities named after DB tables or code symbols · a `feature` invented with a confident rationale nobody stated · **a mocked feature pushed `as_built` with no `blocksImplementation` flag** (it will read Implemented) · **every `feature` pushed `planned` no matter how completely the code builds it** (burying built features under vapor) · "User Management", "Settings", "Core", "Utils" as features · a 200-node first map "for completeness" · 40 questions instead of a draft to react to.
 
 > If a rule and the Recognition Test ever disagree, the Recognition Test wins — the map exists to be recognized, or it is worthless.

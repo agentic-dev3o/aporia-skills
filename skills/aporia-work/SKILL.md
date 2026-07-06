@@ -71,7 +71,9 @@ Normal engineering discipline applies (project rules, tests, lint). Stay inside 
 
 ### Phase 5 — Close the loop
 
-Run the **aporia-sync** skill: it re-scans the touched scopes (`apply_scan`), then calls `aporia:resolve_items` citing what the code now proves — which closes this ticket if it's sync-watched (`closesBy: "sync"`), with provenance reading *scan-verified*. A manual item instead waits for a teammate to attest it — say so in your handoff. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
+Run the **aporia-sync** skill (install it alongside this one — this phase depends on it): it re-scans the touched scopes (`apply_scan`), then calls `aporia:resolve_items` citing what the code now proves — which closes this ticket if it's sync-watched (`closesBy: "sync"`), with provenance reading *scan-verified*.
+
+**Pre-merge, the close is a two-step.** If the product declares a canonical ref and you're still on your `apo-<n>` branch, that sync **attests** the ticket rather than closing it: the item stays **open** with a *"fix ready — awaiting merge"* badge (the fix is proven, just not on the trunk yet). The ticket **closes** when the same sync runs **after the merge, on the canonical ref** — which drops the attestation and marks it resolved. So opening the PR earns the badge; merging and re-syncing on the trunk earns the close. A manual item instead waits for a teammate to attest it — say so in your handoff. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
 
 ## Acceptance checklist
 

@@ -1,8 +1,10 @@
+<!-- generated from shared/content-style.md — edit the source, run bun skills:materialize -->
+
 # Content style — proportionality for the living map
 
 Aporia's bet is that **humans interpret complex state visually**. The map reads as a drill-down — the canvas of node chips, then a row in a list, then a dedicated page — and every string an agent writes becomes typography at one of those depths: a label, a headline, a line, or prose. Text written for the wrong depth breaks the map: a sentence crammed into a title truncates mid-word in every row; a wall of prose buries its own claim; headings wrapped around three sentences read as bureaucracy. **Write for the surface the words will land on, and when in doubt go shorter** — map text is read a hundred times for every time it is written.
 
-This is the contract for *how* text is shaped; the skill that sent you here says *which* fields and *when*. Only the note title is machine-enforced (≤60, rejected); every other shape is a target you hold yourself to.
+This is the contract for *how* text is shaped; the skill that sent you here says *which* fields and *when*. The note title is the machine bound you'll actually hit (≤60 chars, **rejected**, never truncated; bodies and rationales cap at 5000); every other shape is a target you hold yourself to.
 
 ## The proportionality table
 

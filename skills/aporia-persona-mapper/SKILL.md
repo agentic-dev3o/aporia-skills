@@ -30,7 +30,7 @@ You reach Aporia through the **MCP server only**. It is pinned to one product, s
 
 ## The data model (authoritative)
 
-Map to exactly these fields — Aporia's master data model, `master-data.md §3`. Enums are **closed**; reject any value outside the set. Field names are camelCase (the wire contract).
+Map to exactly these fields — the Persona record in Aporia's data model. Enums are **closed**; reject any value outside the set. Field names are camelCase (the wire contract).
 
 ```yaml
 Persona:                              # productId, organizationId, id → server-owned, never sent
@@ -87,7 +87,7 @@ Three judgment calls:
 
 ### Step 2 — The situation → `situation`
 
-The heart of the persona, and the only free-text field. It renders as **markdown** in the persona dossier, so light emphasis on the struggling moment is welcome — but keep it a tight **2–5 sentence narrative in jobs-to-be-done form**, anchored in a concrete triggering moment: not a list of attributes, and not padded into headed sections ([content-style](../aporia-session-notes/references/content-style.md)). Probe in order:
+The heart of the persona, and the only free-text field. It renders as **markdown** in the persona dossier, so light emphasis on the struggling moment is welcome — but keep it a tight **2–5 sentence narrative in jobs-to-be-done form**, anchored in a concrete triggering moment: not a list of attributes, and not padded into headed sections ([content-style](references/shared/content-style.md)). Probe in order:
 
 1. **Trigger / struggling moment** — when does the problem actually bite? ("The auditor's email landed and the register was three months stale.")
 2. **Current behavior** — what are they doing *right now*? The workaround is the real competitor (a spreadsheet, a junior hire, doing nothing). No workaround may mean no real demand — flag it.

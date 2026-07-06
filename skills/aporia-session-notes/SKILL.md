@@ -66,7 +66,7 @@ Before writing: is each note real and correctly typed? Unstated *why* ⇒ **ques
 
 Push with `aporia:record_notes`. A node target is referenced by its stable `key`; an edge/note target by the `id` from `aporia:pull_context`. ≤50 notes per call (≤8 targets each); page if more.
 
-Every string is sized for the surface it renders on — read **[references/content-style.md](references/content-style.md)** (the proportionality table) before composing. The one hard bound: `title` is a ≤60-char plain-text headline, **rejected** (never truncated) past that — the substance goes in the markdown `body`.
+Every string is sized for the surface it renders on — read **[references/shared/content-style.md](references/shared/content-style.md)** (the proportionality table) before composing. The one hard bound: `title` is a ≤60-char plain-text headline, **rejected** (never truncated) past that — the substance goes in the markdown `body`.
 
 ```jsonc
 // aporia:record_notes input
@@ -100,30 +100,7 @@ When a session **implements or traces how a feature works** — the steps, who d
 
 Resolve the feature first (`aporia:search_graph { type: "feature" }` → its `key`; the feature must exist). Then push the process. **Lanes** are the participants (`persona` | `system` | `external`); **steps** are ordered activities in a lane (`step` | `decision` | `trigger`, a trigger carrying `timer` / `webhook` / `event`); **flows** are the messages between steps, a `branch` labelling a decision's exit. Give every lane/step/flow a stable string `id` so steps and flows reference each other. One process per feature — re-recording **refuses** if a process already exists (pass `replace: true` to overwrite, which discards any edits a human made in the canvas editor — confirm first). A lane may bind to a Persona or Component via `refKey`, a step to an Entity it touches via `refKey`.
 
-```jsonc
-// aporia:record_process input
-{
-  "featureKey": "feature:billing.checkout",
-  "name": "Checkout & charge",
-  "lanes": [
-    { "id": "l1", "kind": "persona",  "label": "Shopper" },
-    { "id": "l2", "kind": "system",   "label": "Checkout UI", "refKey": "component:billing.checkout-ui" },
-    { "id": "l3", "kind": "external", "label": "Stripe" }
-  ],
-  "steps": [
-    { "id": "s1", "laneId": "l1", "order": 0, "kind": "step",     "label": "Submit payment" },
-    { "id": "s2", "laneId": "l2", "order": 1, "kind": "step",     "label": "Create PaymentIntent" },
-    { "id": "s3", "laneId": "l3", "order": 2, "kind": "step",     "label": "Confirm charge" },
-    { "id": "s4", "laneId": "l2", "order": 3, "kind": "decision", "label": "Succeeded?" },
-    { "id": "s5", "laneId": "l3", "order": 4, "kind": "trigger",  "label": "Charge webhook", "trigger": { "mode": "webhook" } }
-  ],
-  "flows": [
-    { "id": "f1", "from": "s1", "to": "s2", "label": "submit" },
-    { "id": "f2", "from": "s2", "to": "s3", "label": "create intent" },
-    { "id": "f3", "from": "s4", "to": "s5", "branch": "yes" }
-  ]
-}
-```
+The wire shape — lanes · steps · flows · caps — is in **[references/shared/record-process-schema.md](references/shared/record-process-schema.md)**, the same schema both process doors push. **The discipline it carries here: record the flow the code ACTUALLY takes** — the observed path, its real branches and triggers; don't draw a step or branch the code doesn't have.
 
 The response reports the process `key` and whether it was `created`. The process lands `authored` / `intended` for the team to curate on the canvas.
 
@@ -133,4 +110,4 @@ The response reports the process `key` and whether it was `created`. The process
 - [ ] No invented rationale — missing *why* is a `question`.
 - [ ] Each tension links two targets and names both sides of the conflict.
 - [ ] Targets resolved (`skippedTargets: 0`), and you didn't duplicate an existing note.
-- [ ] Every note has a ≤60-char headline `title` and a markdown `body` — not a sentence crammed into the title, not a wall of text ([content-style](references/content-style.md)).
+- [ ] Every note has a ≤60-char headline `title` and a markdown `body` — not a sentence crammed into the title, not a wall of text ([content-style](references/shared/content-style.md)).

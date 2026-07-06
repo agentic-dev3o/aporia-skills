@@ -69,7 +69,7 @@ If Phase 0b found an existing process, **start from it** — load its lanes/step
 - **Steps** — ordered activities, each in a lane. `step` (a plain activity) · `decision` (a branch point) · `trigger` (started by a `timer` / `webhook` / `event`). `order` sequences them; `refKey` optionally binds a step to an Entity it touches.
 - **Flows** — the messages between steps (`from` → `to` step ids); a `branch` label names a decision's exit ("yes" / "no").
 
-Labels are map typography — a lane 1–3 words, a step 2–5 words verb-first, a branch a one-word guard ([content-style](../aporia-session-notes/references/content-style.md) has the full proportionality table).
+Labels are map typography — a lane 1–3 words, a step 2–5 words verb-first, a branch a one-word guard ([content-style](references/shared/content-style.md) has the full proportionality table).
 
 **A `decision` is binary — give it both exits.** Record a flow for *each* branch, each with a `branch` label (the guard: `yes`/`no`, `valid`/`invalid`, `found`/`missing`) — never only the taken path, or the diagram reads as a straight line running *through* the failure step. If you can't yet name where a branch leads, that exit is a **guess**: draft a placeholder target in the lane that would own it and mark it (Phase 4). Don't drop the branch, and don't aim a flow at a step that doesn't exist — it silently won't render.
 
@@ -100,34 +100,9 @@ Spend attention at the structural forks only. Best guess first, `(Recommended)`.
 
 Push the process. If Phase 0b found **no** existing process, **omit `replace`** (it defaults to refusing) — `created: true` confirms a clean create. If you read an existing process and chose to **refine** it (with the human's go-ahead from the shape gate), push with `replace: true` — a deliberate merge of your changes onto theirs, not a blind clobber:
 
-```jsonc
-// aporia:record_process input
-{
-  "featureKey": "feature:billing.checkout",
-  "name": "Checkout & charge",
-  "lanes": [
-    { "id": "l1", "kind": "persona",  "label": "Shopper", "refKey": "<persona-id>" },
-    { "id": "l2", "kind": "system",   "label": "Checkout UI", "refKey": "component:billing.checkout-ui" },
-    { "id": "l3", "kind": "external", "label": "Stripe" }
-  ],
-  "steps": [
-    { "id": "s1", "laneId": "l1", "order": 0, "kind": "step",     "label": "Submit payment" },
-    { "id": "s2", "laneId": "l2", "order": 1, "kind": "step",     "label": "Create PaymentIntent" },
-    { "id": "s3", "laneId": "l3", "order": 2, "kind": "step",     "label": "Confirm charge" },
-    { "id": "s4", "laneId": "l2", "order": 3, "kind": "decision", "label": "Succeeded?" },
-    { "id": "s5", "laneId": "l3", "order": 4, "kind": "trigger",  "label": "Charge webhook", "trigger": { "mode": "webhook" } },
-    { "id": "s6", "laneId": "l1", "order": 4, "kind": "step",     "label": "See decline message" }
-  ],
-  "flows": [
-    { "id": "f1", "from": "s1", "to": "s2", "label": "submit" },
-    { "id": "f2", "from": "s2", "to": "s3", "label": "create intent" },
-    { "id": "f3", "from": "s4", "to": "s5", "branch": "yes" },
-    { "id": "f4", "from": "s4", "to": "s6", "branch": "no" }
-  ]
-}
-```
+The wire shape — lanes · steps · flows · caps — is in **[references/shared/record-process-schema.md](references/shared/record-process-schema.md)**, the same schema both process doors push. **The design discipline it carries here: a binary `decision` needs BOTH exits** — record a flow for each branch, each `branch`-labelled, the negative target placed in the lane of whoever handles it (a user-facing rejection → the persona lane); never draw only the taken path.
 
-Caps: ≤12 lanes · ≤80 steps · ≤160 flows. One process per feature; it lands `origin: authored` / `state: intended` for the team to curate.
+Caps (in that schema): ≤12 lanes · ≤80 steps · ≤160 flows. One process per feature; it lands `origin: authored` / `state: intended` for the team to curate.
 
 **Backstop — if a *fresh* push errors with `CONFLICT`** ("a process already exists … last edited by `user`/`assistant`"), someone created one between your Phase 0b read and this write. **Do not auto-retry.** Re-read it (`pull_context { includeProcess: true }`) and handle it exactly as Phase 0b: refine-and-merge, or surface the overwrite as a fork — *"A process now exists (last edited by a person). Overwrite it?"* → **Keep theirs, record mine as notes** (Recommended if it was a person) · **Overwrite — I'll lose their edits** · **Cancel**. Only on explicit confirmation re-push with `"replace": true`.
 
