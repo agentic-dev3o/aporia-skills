@@ -90,7 +90,18 @@ Every string is sized for the surface it renders on — read **[references/share
 ] }
 ```
 
-Notes land `provisional` / `open`, authored by your agent — flagged for the team to confirm or resolve in an Aporia Session. The response reports `recorded` and `skippedTargets` (a `ref` that didn't resolve — a node key with no match, or an edge/note id outside this product). If `skippedTargets > 0`, check the keys/ids against `aporia:pull_context` and re-push the affected notes. The server does **not** enforce two targets per tension: if a tension's secondary target lands in `skippedTargets`, the recorded note is one-sided and wrong — re-resolve the missing key/id and re-push before trusting it.
+Notes land `provisional` / `open`, authored by your agent — flagged for the team to confirm or resolve in an Aporia Session. The response reports `recorded`, `skippedTargets` (a `ref` that didn't resolve — a node key with no match, or an edge/note id outside this product), and `notes` — one `{ shortId, id }` ref per recorded note, in input order (cite `APO-<shortId>` in your hand-off; pass the `id` to `aporia:attach_file`). If `skippedTargets > 0`, check the keys/ids against `aporia:pull_context` and re-push the affected notes. The server does **not** enforce two targets per tension: if a tension's secondary target lands in `skippedTargets`, the recorded note is one-sided and wrong — re-resolve the missing key/id and re-push before trusting it.
+
+### Attach a rendered artifact (optional)
+
+When the session produced a rendered document — a Markdown spec, a Claude Artifact's HTML, a PDF (≤10 MB) — drop it onto its note with `aporia:attach_file`, so the team opens it **rendered** in the Inbox instead of reading markup in chat history:
+
+```jsonc
+// aporia:attach_file input — noteId from the `notes` refs record_notes just returned
+{ "noteId": "<id>", "filename": "decision-mockup.html", "fileType": "html", "content": "<!doctype html>…" }
+```
+
+`noteId` comes from the `notes` refs `aporia:record_notes` just returned (or an existing note's id from `aporia:pull_context`); `fileType` is `markdown` | `html` | `pdf`; `content` rides inline — UTF-8 text, base64 for a pdf.
 
 ## Recording a feature's process (observed behavior)
 

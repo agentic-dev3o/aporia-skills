@@ -8,7 +8,7 @@ description: >-
   (absent/partial/complete) from coverage read from code — pushing it with aporia:apply_scan,
   recording new questions/tensions with aporia:record_notes, and CLOSING THE LOOP
   on sync-watched inbox items with aporia:resolve_items (resolve with code
-  evidence; reopen closes the code contradicts). Drives the MCP tools — never a
+  evidence; reopen closed items the code contradicts). Drives the MCP tools — never a
   database CLI. Triggers: sync this PR to Aporia, update the map after merge,
   refresh as-built before merging, aporia sync, re-scan the changed code into the
   map, close the aporia ticket this PR fixes.
@@ -41,7 +41,7 @@ The coverage table — which combinations of bindings and flags read *Not implem
 
 Through the **Aporia MCP server only**, pinned to one product (org + product derived from the API key — you never pass them). Call tools fully-qualified as `aporia:*` so they resolve alongside other MCP servers. If they're unavailable, stop and tell the user to configure the Aporia MCP server (`APORIA_API_KEY` + `APORIA_PRODUCT_ID`).
 
-Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull_context` (what's already mapped + a feature's current bindings), `aporia:apply_scan` (push the refreshed structure + edges), `aporia:record_notes` (new questions/tensions, and `blocksImplementation` deficiency flags on built-but-mocked features), `aporia:resolve_items` (close sync-watched items with the evidence this scan produced; reopen closes it contradicts). (To go the other way — compile a feature's gap into a build plan before writing code — use `aporia:feature_gaps_spec`; this skill closes the loop that opens.)
+Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull_context` (what's already mapped + a feature's current bindings), `aporia:apply_scan` (push the refreshed structure + edges), `aporia:record_notes` (new questions/tensions, and `blocksImplementation` deficiency flags on built-but-mocked features), `aporia:resolve_items` (close sync-watched items with the evidence this scan produced; reopen closed items it contradicts). (To go the other way — compile a feature's gap into a build plan before writing code — use `aporia:feature_gaps_spec`; this skill closes the loop that opens.)
 
 ## Workflow
 
@@ -118,7 +118,7 @@ Sync doesn't just report structure — it settles the **inbox items whose closur
 1. the **branch ticket** from Phase 0 (`apo-<n>` — the item this diff explicitly set out to close);
 2. the **open notes on the nodes you re-scanned** — `pull_context` notes carry `shortId` and `closesBy`; every open one with `closesBy: "sync"` (bugs, directive decisions, agent-recorded deficiency flags, watched code chores) is a candidate — a now-stale `blocksImplementation` flag whose mock this PR replaced belongs here (Phase 3).
 
-For each candidate, judge against the code you just scanned — then one `aporia:resolve_items` call (pass the same `observed` `{ ref, sha }` from Phase 0; ≤50 items per call — page past that) with per-item verdicts:
+For each candidate, judge against the code you just scanned — then one `aporia:resolve_items` call (pass the same `observed` `{ ref, sha }` from Phase 0; ≤50 items per call — page past that) with per-item verdicts. On a **gated (off-canonical) run**, also check for an open PR — `gh pr view --json number,url` — and attach `pullRequest: { number, url }` to each branch `resolve`, so the attestation carries the link (the Inbox reads *"Fix ready · PR #n"*). No PR yet? Note in your hand-off that re-running `aporia:resolve_items` after opening it upgrades the attestation (attestation is latest-wins). The server guards the field: a `pullRequest` on a canonical resolve or on a `reopen` is per-item **skipped** — attach it only on the off-canonical resolve path.
 
 - **`resolve`** when the code now proves it — the bug's drift is gone, the directive's verdict is built, the chore landed. `evidence` cites the code fact (file/symbol/test), not "done": *"checkout.ts persists the coupon; regression test added"*.
 - **`reopen`** when the code CONTRADICTS a resolved sync-watched item — an optimistic hand-close the diff disproves, or a regression that resurrects a fixed bug. The map stays honest by re-checking, not by forbidding.
@@ -126,7 +126,7 @@ For each candidate, judge against the code you just scanned — then one `aporia
 
 The response reports per-item outcomes `{ resolved, reopened, attested, skipped }`.
 
-**The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not). That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. Read the `skipped` reasons too (a manual item is a teammate's to attest — say so in your handoff rather than forcing it). Never close an item whose evidence you didn't actually scan this run.
+**The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not) — with the PR link when you attached `pullRequest`. That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. Read the `skipped` reasons too (a manual item is a teammate's to attest — say so in your handoff rather than forcing it). Never close an item whose evidence you didn't actually scan this run.
 
 ## Acceptance checklist
 

@@ -1,9 +1,10 @@
 # Evaluations — aporia-work
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These three scenarios lock in the disciplines most likely to regress — the
+skill works. These four scenarios lock in the disciplines most likely to regress — the
 kind gate (judgment stays human), the attestation two-step that keeps a pre-merge "done"
-honest, and ticket-scope discipline. There is no built-in runner: execute each `query`
+honest, ticket-scope discipline, and the claim etiquette that keeps two sessions from
+double-working one ticket. There is no built-in runner: execute each `query`
 against a fresh Claude instance with the skill loaded and the **Aporia MCP server
 connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -51,6 +52,19 @@ describes the required graph + repo `setup` instead of bundling input files.
       "Branches apo-6-<slug> and closes the loop through the aporia-sync skill, never by editing the item's status",
       "NEGATIVE: a run that folds the unrelated fix into APO-6's diff, or ignores the Rule, FAILS"
     ]
+  },
+  {
+    "skills": ["aporia-work"],
+    "name": "W-4 — claim etiquette: a fresh prior claim is a conversation, not a race",
+    "setup": "APO-12 is a sync-watched task. Another session claimed it ~30 minutes ago (its claimedAt is fresh), so the Inbox already shows it In progress. The repo is available and the fix is easy.",
+    "query": "Pick up APO-12.",
+    "expected_behavior": [
+      "Pulls with aporia:pull_item { ticket, claim: true } — the claim rides the pull, not a separate step",
+      "Reads previousClaimedAt from the response and recognizes it as FRESH (~30 minutes)",
+      "STOPS and surfaces the collision to the human before implementing — someone is likely mid-flight; proceeding is the human's call",
+      "Treats the claim as advisory etiquette: never edits the item to 'unclaim' it, and knows the Phase 5 resolve/attest is what clears it",
+      "NEGATIVE: a run that silently double-works the freshly-claimed ticket, or hand-clears the claim by editing the item, FAILS"
+    ]
   }
 ]
 ```
@@ -70,3 +84,6 @@ these scenarios exist to catch (each maps to the skill's anti-pattern list):
   (W-3) orphans changes from the items that govern them — new work gets new items.
 - **Hand-declared completion.** Any close that bypasses scan evidence (`resolve_items`
   with a citable code fact) breaks the provenance the inbox relies on.
+- **Racing a fresh claim.** Double-working a ticket someone claimed minutes ago (W-4)
+  produces rival diffs — the claim is advisory, so honoring it is etiquette the skill
+  enforces, not a lock the server does.

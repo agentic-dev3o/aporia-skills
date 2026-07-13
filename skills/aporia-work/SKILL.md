@@ -1,9 +1,9 @@
 ---
 name: aporia-work
 description: >-
-  Works ONE Aporia inbox ticket end-to-end: pulls the item as a work order with
-  aporia:pull_item (bug / task / directive decision — the kinds that carry a
-  verdict), zooms its map targets, implements against them on an apo-<n> branch,
+  Works ONE Aporia inbox ticket end-to-end: pulls — and claims — the item as a
+  work order with aporia:pull_item (bug / task / directive decision — the kinds
+  that carry a verdict), zooms its map targets, implements against them on an apo-<n> branch,
   then closes the loop with the aporia-sync skill so scan evidence resolves the
   item. When the ticket is epistemic (idea / question / tension) the pull is
   refused and this skill turns into an adjudication conversation with the human
@@ -29,7 +29,7 @@ Copy this checklist into your response:
 ```
 Work progress:
 - [ ] Phase 0 — Ground: aporia:pull_constitution
-- [ ] Phase 1 — Pull the ticket: aporia:pull_item { ticket }
+- [ ] Phase 1 — Pull + claim the ticket: aporia:pull_item { ticket, claim: true }
 - [ ] Phase 2 — Zoom: pull_context on node targets; feature_gaps_spec if feature-anchored
 - [ ] Phase 3 — Branch apo-<n>-<slug>; plan against the decisions/Rules
 - [ ] Phase 4 — Implement + test
@@ -40,13 +40,16 @@ Work progress:
 
 `aporia:pull_constitution` once — the thesis, principles, and personas your change must honor.
 
-### Phase 1 — Pull the ticket
+### Phase 1 — Pull + claim the ticket
 
-`aporia:pull_item { ticket: "APO-8" }` (the bare number works too). You get:
+`aporia:pull_item { ticket: "APO-8", claim: true }` (the bare number works too). `claim: true` stamps an anonymous, advisory claim so the Inbox shows the ticket **In progress** and a parallel session sees it's being worked. You get:
 
-- **item** — kind, title, markdown body, rationale, priority, `closesBy` (how it will close);
+- **item** — kind, title, markdown body, rationale, priority, `closesBy` (how it will close), `claimedAt`;
 - **targets** — the map spots it's about: node targets carry the stable `key` and `externalRefs` (the files to read first); a bug's note target carries the **decision it traces to** (the intent the code contradicts — your fix closes THAT gap, nothing more);
-- **guidance** — branch convention and the next tool to call.
+- **guidance** — branch convention and the next tool to call;
+- **previousClaimedAt** — the prior claim's timestamp (`null` if none; the claim route only — a plain read always reports `null`).
+
+**Claim collision:** a FRESH `previousClaimedAt` (within roughly two hours) means someone is likely mid-flight — stop and surface it to the human before continuing; double-working produces rival diffs. Stale or `null` → proceed. The claim is etiquette, never a lock: it locks nobody out, and you never hand-clear it.
 
 **If the pull is refused**, the error tells you why — act on it, don't work around it:
 
@@ -73,7 +76,7 @@ Normal engineering discipline applies (project rules, tests, lint). Stay inside 
 
 Run the **aporia-sync** skill (install it alongside this one — this phase depends on it): it re-scans the touched scopes (`apply_scan`), then calls `aporia:resolve_items` citing what the code now proves — which closes this ticket if it's sync-watched (`closesBy: "sync"`), with provenance reading *scan-verified*.
 
-**Pre-merge, the close is a two-step.** If the product declares a canonical ref and you're still on your `apo-<n>` branch, that sync **attests** the ticket rather than closing it: the item stays **open** with a *"fix ready — awaiting merge"* badge (the fix is proven, just not on the trunk yet). The ticket **closes** when the same sync runs **after the merge, on the canonical ref** — which drops the attestation and marks it resolved. So opening the PR earns the badge; merging and re-syncing on the trunk earns the close. A manual item instead waits for a teammate to attest it — say so in your handoff. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
+**Pre-merge, the close is a two-step.** If the product declares a canonical ref and you're still on your `apo-<n>` branch, that sync **attests** the ticket rather than closing it: the item stays **open** with a *"fix ready — awaiting merge"* badge (the fix is proven, just not on the trunk yet). The ticket **closes** when the same sync runs **after the merge, on the canonical ref** — which drops the attestation and marks it resolved. So opening the PR earns the badge; merging and re-syncing on the trunk earns the close. Either transition (attest or close) also clears the Phase 1 claim — the evidence-backed `resolve_items` is what drops the "In progress" stamp, never a hand-edit. A manual item instead waits for a teammate to attest it — say so in your handoff. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
 
 ## Acceptance checklist
 

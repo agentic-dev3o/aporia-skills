@@ -4,7 +4,7 @@ Per Anthropic's skill best practices: evaluations are the source of truth for wh
 skill works. These seven scenarios lock in the disciplines most likely to regress — the
 scope-boundary rules that decide when `completeScope` is safe, the same-session pagination
 spare, the canonical-worldline gate that keeps a branch scan a preview, the attestation
-half of the close, and the coverage-derived Implementation axis. There is no built-in
+half of the close (PR-linked when one exists), and the coverage-derived Implementation axis. There is no built-in
 runner: execute each `query` against a fresh Claude instance with the skill loaded and the
 **Aporia MCP server connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -85,11 +85,12 @@ scopes.
   {
     "skills": ["aporia-sync"],
     "name": "S-6 — rejected PR: no false as-built, no falsely-closed ticket",
-    "setup": "A pre-PR sync ran on a feature branch (canonicalRef declared, so the scan was forced to preview and wrote nothing). The branch also carries a sync-watched ticket apo-<n> whose fix IS proven in the branch's code. The PR is then closed / rejected — the branch never merges.",
+    "setup": "A pre-PR sync ran on a feature branch (canonicalRef declared, so the scan was forced to preview and wrote nothing). The branch also carries a sync-watched ticket apo-<n> whose fix IS proven in the branch's code, and an open PR exists for the branch (e.g. #57). The PR is then closed / rejected — the branch never merges.",
     "query": "Walk me through what the shared map should hold after that PR was rejected.",
     "expected_behavior": [
       "Because the pre-PR scan was a preview (branch worldline), it wrote NO as-built structure — the shared map retains none of the branch's nodes / edges, so a rejected PR leaves no orphan as-built to clean up",
       "The branch's resolve of apo-<n> ran off the canonical ref, so it ATTESTED the item ('fix ready — awaiting merge') rather than closing it — the attested count went up, resolved did not",
+      "The branch resolve attached pullRequest:{number,url} (read from the open PR), so the attestation carried the 'Fix ready · PR #n' link in the Inbox — honest even after the rejection: the fix is proven but unmerged, and the link points at where",
       "NEGATIVE: a run that had CLOSED the ticket on the branch would leave a falsely-closed item pointing at code that never merged — the attestation gate exists precisely so a rejected PR leaves the ticket OPEN, not closed",
       "The attestation would clear on its own only when a post-merge canonical sync re-runs the resolve on trunk — since this PR was rejected, no such sync runs and the ticket correctly stays open",
       "Nets out: a rejected PR leaves NEITHER a false as-built structure NOR a falsely-closed ticket — the two gates (preview + attestation) each cover one half"

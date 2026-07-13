@@ -32,7 +32,7 @@ You do the drafting; you spend the human's attention only at genuine forks. At e
 
 Through the **Aporia MCP server only** — pinned to one product, org derived from its API key, so you never pass a product id. Call tools **fully-qualified as tools of the `aporia` server** (e.g. `aporia:search_graph`) so they resolve alongside other MCP servers. If they aren't available, stop and tell the user to configure the Aporia MCP server (`APORIA_API_KEY` + `APORIA_PRODUCT_ID`) first.
 
-Tools: `aporia:pull_constitution` (personas to populate lanes), `aporia:search_graph` (resolve the feature + candidate participants), `aporia:pull_context` (zoom the feature; with `includeProcess: true`, read any process it already has so you can refine it), `aporia:apply_scan` (create the feature if it doesn't exist yet), `aporia:record_process` (push the process), `aporia:record_notes` (optional — log what's still unconfirmed).
+Tools: `aporia:pull_constitution` (personas to populate lanes), `aporia:search_graph` (resolve the feature + candidate participants), `aporia:pull_context` (zoom the feature; with `includeProcess: true`, read any process it already has so you can refine it), `aporia:apply_scan` (create the feature if it doesn't exist yet), `aporia:record_process` (push the process), `aporia:record_notes` (optional — log what's still unconfirmed), `aporia:attach_file` (optional — drop a rendered artifact on the hand-off note).
 
 ## Workflow
 
@@ -112,7 +112,7 @@ The process is a seed; the editor is where it's finished. Tell the human plainly
 
 1. **Where to polish** — open the feature in Aporia → the **Process** tab (the swimlane editor: add / edit / move lanes·steps·flows, drag to connect, save).
 2. **What's still rough** — name the steps/branches you guessed (e.g. *"S4's 'no' branch and the refund path are guesses — confirm them in the editor"*). The wire schema has **no `provisional` field for a step**, so this honesty lives in the hand-off message and, optionally, in a note.
-3. **Optional** — if unconfirmed parts are significant, drop a `question` note via `aporia:record_notes` targeting the feature (*"steps S4, S7 unconfirmed — finish in the editor"*), so the gap is curatable on the map, not just in chat.
+3. **Optional** — if unconfirmed parts are significant, drop a `question` note via `aporia:record_notes` targeting the feature (*"steps S4, S7 unconfirmed — finish in the editor"*), so the gap is curatable on the map, not just in chat. If the session also produced a rendered artifact — the swimlane preview, a decision doc — attach it to that note with `aporia:attach_file` (`noteId` from the `notes` refs `record_notes` returns, or from `aporia:pull_context`; `fileType` markdown | html | pdf, `content` inline, ≤10 MB) so the team reads the rendered shape next to the question.
 
 ## Acceptance checklist (before declaring done)
 
