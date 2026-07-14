@@ -68,6 +68,8 @@ Push with `aporia:record_notes`. A node target is referenced by its stable `key`
 
 Every string is sized for the surface it renders on — read **[references/shared/content-style.md](references/shared/content-style.md)** (the proportionality table) before composing. The one hard bound: `title` is a ≤60-char plain-text headline, **rejected** (never truncated) past that — the substance goes in the markdown `body`.
 
+When a `decision` answers an open question, tension, idea, or supersedes a decision, pass `resolves` with that source note's `id` (from `aporia:pull_context` or the inbox) — the source closes and links to your decision, same as the UI action zone. Targets are inherited from the source on this path.
+
 ```jsonc
 // aporia:record_notes input
 { "notes": [
@@ -76,6 +78,12 @@ Every string is sized for the surface it renders on — read **[references/share
     "body": "Checkout charges through the Stripe **PaymentIntents** API, not the legacy Charges API.\n\nPaymentIntents is the only path that carries SCA/3DS, which EU cards require.",
     "rationale": "3DS/SCA is mandatory for EU customers; the Charges API can't satisfy it.",
     "targets": [{ "refType": "node", "ref": "feature:billing.checkout", "role": "primary" }] },
+  { "kind": "decision",
+    "title": "Issued invoices stay immutable — credit notes",
+    "body": "Partial refunds spawn a separate **credit note**; issued invoices are never reopened.",
+    "rationale": "Reopening breaks the audit trail a ledger exists to keep.",
+    "resolves": "<question-note-id>",
+    "targets": [] },
   { "kind": "tension",
     "title": "Money math: UI vs Billing service",
     "body": "Invoice totals are computed in the **checkout UI**, but the feature's intent says the *Billing service* owns money math.\n\nThe two will drift the moment a second surface needs a total.",
@@ -94,14 +102,16 @@ Notes land `provisional` / `open`, authored by your agent — flagged for the te
 
 ### Attach a rendered artifact (optional)
 
-When the session produced a rendered document — a Markdown spec, a Claude Artifact's HTML, a PDF (≤10 MB) — drop it onto its note with `aporia:attach_file`, so the team opens it **rendered** in the Inbox instead of reading markup in chat history:
+When the session produced a rendered document — a Markdown spec, a Claude Artifact's HTML, a PDF (≤10 MB) — drop it onto its note or map node with `aporia:attach_file`, so the team opens it **rendered** in the Inbox or Node Workspace instead of reading markup in chat history:
 
 ```jsonc
-// aporia:attach_file input — noteId from the `notes` refs record_notes just returned
+// aporia:attach_file input — pass exactly one target
 { "noteId": "<id>", "filename": "decision-mockup.html", "fileType": "html", "content": "<!doctype html>…" }
+// or attach straight to the node you were working on:
+{ "nodeKey": "feature:billing.checkout", "filename": "spec.md", "fileType": "markdown", "content": "# Checkout spec\n…" }
 ```
 
-`noteId` comes from the `notes` refs `aporia:record_notes` just returned (or an existing note's id from `aporia:pull_context`); `fileType` is `markdown` | `html` | `pdf`; `content` rides inline — UTF-8 text, base64 for a pdf.
+`noteId` comes from the `notes` refs `aporia:record_notes` just returned (or an existing note's id from `aporia:pull_context`); `nodeKey` is a map node's stable key from `aporia:search_graph` or `aporia:pull_context`. Pass **exactly one** of `noteId` or `nodeKey`. `fileType` is `markdown` | `html` | `pdf`; `content` rides inline — UTF-8 text, base64 for a pdf.
 
 ## Recording a feature's process (observed behavior)
 
