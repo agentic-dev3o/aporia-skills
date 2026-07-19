@@ -70,6 +70,8 @@ Branch as **`apo-<n>-<short-slug>`** (e.g. `apo-8-coupon-persistence`) — the P
 
 ### Phase 4 — Implement + test
 
+**Tier the work first.** A one-file fix, config change, or pattern replication → implement solo, right here. Work that is cross-layer, has UI/UX taste at stake, or is high blast-radius → if a graded-build harness skill is installed (e.g. `agent-team`), hand the build to it instead of implementing solo: Phase 0–2's pull IS its contract grounding (don't re-pull — the constitution, gap spec, decisions-to-honor, and `openBugs` materialize into its contract, with the `APO-<n>` ticket as the item ref), and its passing build closes the loop with the same aporia-sync as Phase 5 — don't run the sync twice. No such skill installed → implement solo with care proportional to the blast radius.
+
 Normal engineering discipline applies (project rules, tests, lint). Stay inside the ticket: a bug fix closes the traced decision's gap — scope creep belongs in new items (`aporia:record_notes`), not in this diff.
 
 ### Phase 5 — Close the loop

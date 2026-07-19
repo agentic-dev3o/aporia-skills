@@ -51,7 +51,7 @@ Copy this checklist into your response and check off each phase:
 Sync progress:
 - [ ] Phase 0 — Ground: aporia:pull_constitution; the diff's touched scopes; the branch's ticket (apo-<n>); mint the run's sessionId + capture observed{ref,sha}
 - [ ] Phase 1 — Diff scope: which subsystems the change actually touched
-- [ ] Phase 2 — Re-inventory + distill the touched slices (D1–D4)
+- [ ] Phase 2 — Re-inventory + distill the touched slices (D1–D4 + D6)
 - [ ] Phase 3 — Re-derive coverage: bindings as_built + deficiency flags read from code (the Realization Probe)
 - [ ] Phase 4 — aporia:apply_scan per touched scope (sessionId + observed on every page; completeScope on its final page)
 - [ ] Phase 5 — aporia:record_notes: new questions/tensions; flag each built-but-mocked feature's missing side
@@ -75,7 +75,7 @@ Read the change: `git diff` (working tree, or the PR's merge base..head). Map th
 
 ### Phase 2 — Re-inventory + distill the touched slices
 
-For each touched scope, gather the raw facts *now* (entities/components/edges) and apply D1–D4 from the extraction protocol — exactly as onboarding, but only over the changed slice. New code → new nodes/edges. Deleted code → omit it from the scope's complete batch so the tombstone sweep removes it. Renamed/moved code → same stable `key`, refreshed `externalRefs` (reconciliation handles the move).
+For each touched scope, gather the raw facts *now* (entities/components/edges) and apply D1–D4 + D6 from the extraction protocol — exactly as onboarding, but only over the changed slice. D6 rides every re-push: kinds from the decision table (`ui`/`trigger`/`agent`/`tool`/`service`/`store`/`external`/`module`), a ≤4-word verb `label` on every `depends_on` edge (conditions included — "gated: ENABLE_V4"), `data.sub` refreshed when the signature changed (route, step caps, tool counts — concrete numbers), `data.domain` on externals, lifecycle in the group name. A re-scan that strips an existing verb label or `sub` is a regression, not a simplification. New code → new nodes/edges. Deleted code → omit it from the scope's complete batch so the tombstone sweep removes it. Renamed/moved code → same stable `key`, refreshed `externalRefs` (reconciliation handles the move).
 
 ### Phase 3 — Re-derive coverage (move the Implementation axis)
 

@@ -8,7 +8,7 @@
 
 1. The Bar — the Recognition Test
 2. Observation vs. Interpretation
-3. The Five Disciplines (D1 plumbing · D2 grain · D3 language · D4 evidence · D5 intent)
+3. The Six Disciplines (D1 plumbing · D2 grain · D3 language · D4 evidence · D5 intent · D6 legibility)
 4. The Staged Pipeline
 5. Disciplined Elicitation
 6. Division of Labor
@@ -44,7 +44,7 @@ Your entire value is the interpretation — clustering, naming, dropping, inferr
 
 ---
 
-## 3. The Five Disciplines
+## 3. The Six Disciplines
 
 **D1 — The Plumbing Filter** *(the single most important anti-slop rule).* A node earns its place only if **a non-engineer would point at it and say "yes, that's part of my product."** Exclude framework scaffolding, DTOs/serializers, config, utils/helpers, generic CRUD wrappers, adapters, test fixtures, build tooling. Include domain concepts. Litmus: `Invoice`, `Subscription`, `Lead` are in; `RetryConfig`, `PaginationParams`, `Logger` are out — though the parser sees them identically. This is what separates a *product map* from an *architecture diagram*.
 
@@ -56,6 +56,27 @@ Your entire value is the interpretation — clustering, naming, dropping, inferr
 
 **D5 — Intent is Elicited, never Fabricated.** Propose `feature` nodes and their bindings from routes/UI/folders, running **[The Realization Probe](shared/realization-probe.md)** on each — its five signals (surface · logic · persistence/IO · data realness · gating) conclude in one of three actions, never a grade (the full protocol lives in that shared reference). What you must **not** fabricate is the **intent** — the *why*, the success criteria, the persona served. Leave `intent: ""` and the arrays empty; that is Phase 5's job. A fully-wired *build* with an honest empty intent is correct; a feature with a fabricated rationale is worse than one with none.
 
+**D6 — Architecture Legibility** *(the map must read like a system, not an inventory).* The canvas lays components out by **role** and narrates them through **edge verbs** — so a scan that skips them produces boxes with no story.
+
+- **Kinds by decision rule, not vibes.** Every component picks its `componentKind` from this table; the boundary cases are the rule:
+
+  | Kind | Rule | Boundary case |
+  |---|---|---|
+  | `ui` | a screen a **human** uses | the page that calls an API route is `ui`; the route is not |
+  | `trigger` | a **machine-invocable** surface — API route, webhook, cron | a SvelteKit `+server.ts` / Next route handler is a `trigger`, never a `service` |
+  | `agent` | an LLM loop with tools | one LLM call inside a service is not an `agent`; a tool-loop is |
+  | `tool` | a capability bundle an agent calls | a toolset module ("Notion tools") is `tool`, not `module` |
+  | `service` | owned logic exposing operations | — |
+  | `store` | where state rests (DB, cache, blob) | — |
+  | `external` | a dependency the product doesn't own | the SDK wrapper you own is a `service`; the vendor behind it is `external` |
+  | `module` | owned library code that is none of the above | last resort — an over-full `module` column means misclassified roles |
+
+- **Entries and boundary first.** Before distilling a scope, name its **entry surfaces** (`ui`/`trigger` — what the outside world can invoke) and its **externals** (what it depends on but doesn't own). They are the map's left and right rails; a scope with zero entries is a smell (something invokes this code — find it).
+- **Verb labels are mandatory on `depends_on`.** Every component→component edge carries a `label`: ≤4 words stating **what crosses it**, from evidence — "mints Convex JWT", "persists messages", "markdown → YAML". A conditional path carries its condition in the label ("gated: ENABLE_V4", "fallback"). An unlabeled `depends_on` between services is slop.
+- **The `sub` vitals line.** A component's `data.sub` is its evidence-backed signature — a route ("POST /api/chat"), a runtime shape ("ToolLoopAgent · 30 steps · 14 tools"), a store's technology. Concrete numbers over adjectives; models/tools an agent uses ride here, **never as nodes** (a model node is a degree-everything supernode that wrecks the layout). An `external`'s `data.domain` ("clerk.com") lets the canvas render its favicon.
+- **Lifecycle rides the group name.** When generations coexist, say so where the container is titled: "NOA v3 (legacy)", "Checkout v2 (fallback)".
+- **Risky externals get a `tension`.** An unofficial API, a scraped endpoint, a deprecated SDK — record the risk as a tension note on that component; a map that renders the dependency but not the danger is only half honest.
+
 ---
 
 ## 4. The Staged Pipeline
@@ -63,7 +84,7 @@ Your entire value is the interpretation — clustering, naming, dropping, inferr
 Each stage gates the next:
 
 1. **Inventory** *(observation, high recall, no judgment)* — schema entities, modules, exports, routes, dependency edges.
-2. **Distill** *(interpretation — D1 filter, D2 grain, D3 language, D4 evidence)* — emit `entity`/`component` nodes + structural edges as `as_built`.
+2. **Distill** *(interpretation — D1 filter, D2 grain, D3 language, D4 evidence, D6 legibility)* — emit `entity`/`component` nodes + structural edges as `as_built`; kinds by the D6 table, entries/externals named, `depends_on` edges verb-labeled, `sub` vitals filled.
 3. **Propose** *(features + the Realization Probe — D5)* — candidate `feature` nodes + `realized_by`/`touches` bindings; the probe reports the structure that exists `as_built` and flags any built-but-hollow feature with an open `blocksImplementation` note; `intent` left empty for Phase 5.
 4. **Elicit** *(§5)* — hand the draft to the human.
 5. **Commit** — push per scope via `apply_scan` (scopeKey + completeScope), reconciled by stable `key`. Re-scans run the same pipeline; identity is the `key`, so refactors and file moves never orphan bound intent.
@@ -109,9 +130,10 @@ Structure flows from the code; intent flows from the team. The map's honesty is 
 - [ ] No intent was fabricated; every *why* traces to a human answer or is an open question (D5).
 - [ ] Each `blocksImplementation` flag cites its deciding evidence (the missing side, the mock, the `TODO`); the half-baked / mocked features were surfaced in Phase 5, none asserted as shipped.
 - [ ] Corrections were captured as decisions/tensions, not silently applied.
+- [ ] Every component's kind follows the D6 table; each scope's entries and externals are identified; every `depends_on` edge carries a ≤4-word verb label; `sub` vitals cite evidence (D6).
 
 ## 8. Anti-Patterns (reject)
 
-The raw import graph as edges · one node per file/function/table · entities named after DB tables or code symbols · a `feature` invented with a confident rationale nobody stated · **a mocked feature pushed `as_built` with no `blocksImplementation` flag** (it will read Implemented) · **every `feature` pushed `planned` no matter how completely the code builds it** (burying built features under vapor) · "User Management", "Settings", "Core", "Utils" as features · a 200-node first map "for completeness" · 40 questions instead of a draft to react to.
+The raw import graph as edges · one node per file/function/table · entities named after DB tables or code symbols · a `feature` invented with a confident rationale nobody stated · **a mocked feature pushed `as_built` with no `blocksImplementation` flag** (it will read Implemented) · **every `feature` pushed `planned` no matter how completely the code builds it** (burying built features under vapor) · "User Management", "Settings", "Core", "Utils" as features · a 200-node first map "for completeness" · 40 questions instead of a draft to react to · an unlabeled `depends_on` between services · a model or LLM as a graph node · an API route classified `service` · a scope with no identified entry (D6).
 
 > If a rule and the Recognition Test ever disagree, the Recognition Test wins — the map exists to be recognized, or it is worthless.
