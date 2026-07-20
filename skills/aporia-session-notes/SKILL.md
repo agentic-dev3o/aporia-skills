@@ -1,18 +1,17 @@
 ---
 name: aporia-session-notes
 description: >-
-  Captures what a coding session produced back into Aporia's living map through
-  the MCP server — the decisions made, the questions surfaced, and the
-  deviations from the planned/intended design — and records them as Notes
-  attached to the right nodes. Resolves targets with aporia:search_graph / aporia:pull_context,
-  then pushes with aporia:record_notes. Also records a feature's OBSERVED
-  behavior — the sequence/swimlane its code actually follows — with
-  aporia:record_process (to DESIGN an intended process WITH the human, use the
-  aporia-design-process skill instead). The inbound half of Aporia's
-  bidirectional sync. Triggers: record this session's decisions in Aporia, capture
-  what we decided / what's open / where the code diverged from the plan, sync
-  session notes, log a tension or open question to the map, capture the process a
-  feature's code actually follows.
+  Captures what a coding session produced back into Aporia's living map — the
+  decisions made (with rationale), the questions left open, the tensions where
+  code diverged from intent — routed by the rule: owes a verdict → new item
+  (aporia:record_notes); context on an existing item → comment
+  (aporia:comment_item); owes nobody → PR body. Also records a feature's
+  OBSERVED behavior — the swimlane its code actually follows — with
+  aporia:record_process (to design an INTENDED process WITH the human, use
+  aporia-design-process instead). Use when recording a session's decisions in
+  Aporia, capturing what was decided / what's open / where the code diverged
+  from the plan, logging a question or tension to the map, or syncing session
+  notes.
 ---
 
 # Aporia session notes
@@ -24,6 +23,14 @@ You reach Aporia through the **MCP server only**. It's pinned to one product; yo
 ## The hard line
 
 **Never fabricate rationale.** If the *why* behind a choice wasn't actually established in the session, it is an **open question**, not a decision. Every note must trace to a real moment in this session — something decided, asked, or observed-as-diverging. No invented confidence.
+
+## The routing rule — item vs comment vs PR body
+
+Not everything a session produces deserves a **new item**. Route by one question — *does this owe a human a verdict, or a unit of work?*
+
+- **A new item** (`aporia:record_notes`) — only when it does: an open question someone must answer, a tension to adjudicate, a decision made, a bug/task to build. An item is a triage row a human must process; over-filing buries the verdicts the team actually owes.
+- **A comment** (`aporia:comment_item { ticket, body }`) — context on an **existing** item: progress while working it, evidence you gathered, a premise the code now contradicts, "while working ticket 8 I noticed…". A comment is non-triageable by construction — no ticket number, no status — it lands in the item's thread and exerts zero inbox pressure. Never mint a new item to mirror or annotate one that already exists.
+- **The PR body** — ephemeral narration of a diff (what you changed, how you tested). It belongs with the code review, not in Aporia at all.
 
 ## The kinds of note
 
@@ -98,7 +105,7 @@ When a `decision` answers an open question, tension, idea, or supersedes a decis
 ] }
 ```
 
-Notes land `provisional` / `open`, authored by your agent — flagged for the team to confirm or resolve in an Aporia Session. The response reports `recorded`, `skippedTargets` (a `ref` that didn't resolve — a node key with no match, or an edge/note id outside this product), and `notes` — one `{ shortId, id }` ref per recorded note, in input order (cite `APO-<shortId>` in your hand-off; pass the `id` to `aporia:attach_file`). If `skippedTargets > 0`, check the keys/ids against `aporia:pull_context` and re-push the affected notes. The server does **not** enforce two targets per tension: if a tension's secondary target lands in `skippedTargets`, the recorded note is one-sided and wrong — re-resolve the missing key/id and re-push before trusting it.
+Notes land `provisional` / `open`, authored by your agent — flagged for the team to confirm or resolve in an Aporia Session. The response reports `recorded`, `skippedTargets` (a `ref` that didn't resolve — a node key with no match, or an edge/note id outside this product), and `notes` — one `{ shortId, id }` ref per recorded note, in input order (cite the returned `ticket` verbatim in your hand-off — it already carries this product's prefix; pass the `id` to `aporia:attach_file`). If `skippedTargets > 0`, check the keys/ids against `aporia:pull_context` and re-push the affected notes. The server does **not** enforce two targets per tension: if a tension's secondary target lands in `skippedTargets`, the recorded note is one-sided and wrong — re-resolve the missing key/id and re-push before trusting it.
 
 ### Attach a rendered artifact (optional)
 
@@ -126,6 +133,8 @@ The wire shape — lanes · steps · flows · caps — is in **[references/share
 The response reports the process `key` and whether it was `created`. The process lands `authored` / `intended` for the team to curate on the canvas.
 
 ## Acceptance checklist
+
+- [ ] Routing honored: context on an existing item went to `aporia:comment_item`, diff narration stayed in the PR body — only verdict-owing findings became new items.
 
 - [ ] Every note traces to a real moment in this session.
 - [ ] No invented rationale — missing *why* is a `question`.

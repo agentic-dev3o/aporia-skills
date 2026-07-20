@@ -1,19 +1,15 @@
 ---
 name: aporia-persona-mapper
 description: >-
-  Define or refine a Persona in Aporia's living map through a short Socratic
-  interview, then write it through the MCP server. A Persona is a Ring 0
-  Constitution invariant — a situation portrait (role + pain severity) that every
-  feature is judged against. Use whenever someone wants to add or sharpen a persona
-  for the pinned product, capture who feels a problem and how badly, turn a fuzzy
-  "our user" into a typed record, separate the buyer from the user, or retire a
-  persona a product no longer pursues. Reads existing personas with
-  aporia:fetch_personas and writes with aporia:upsert_personas. Triggers: add a
-  persona, map this persona, define the persona for this product, who feels this
-  pain, is this person a buyer or a user, retire that persona. Distinct from
-  aporia-session-notes (records a coding session's decisions/questions) and
-  aporia-onboard (scans code into the map) — this skill authors the Constitution's
-  personas, and only ever WITH the human.
+  Defines or refines one Persona in Aporia's living map through a short Socratic
+  interview — decision role, situation (jobs-to-be-done), pain severity — read
+  with aporia:fetch_personas and written with aporia:upsert_personas. A Persona
+  is Ring 0: a situation portrait every feature is judged against, authored only
+  WITH the human, never invented from code. Use when adding or sharpening a
+  persona, capturing who feels a pain and how badly, turning a fuzzy "our user"
+  into a typed record, separating the buyer from the user, or retiring a persona
+  the product no longer pursues. Distinct from aporia-onboard (scans code into
+  the map) and aporia-session-notes (records a session's discourse).
 ---
 
 # Aporia persona mapper

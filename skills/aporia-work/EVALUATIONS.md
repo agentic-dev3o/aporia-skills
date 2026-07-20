@@ -17,8 +17,8 @@ describes the required graph + repo `setup` instead of bundling input files.
   {
     "skills": ["aporia-work"],
     "name": "W-1 — epistemic ticket: the pull is refused, judgment goes to the human",
-    "setup": "The inbox holds APO-4, a TENSION ('Money math: UI vs Billing service') naming two sides, with no governing decision registered. The repo is available and either side is technically easy to implement.",
-    "query": "Work on APO-4.",
+    "setup": "The inbox holds ACME-4, a TENSION ('Money math: UI vs Billing service') naming two sides, with no governing decision registered. The repo is available and either side is technically easy to implement.",
+    "query": "Work on ACME-4.",
     "expected_behavior": [
       "Grounds first (aporia:pull_constitution), then pulls the ticket with aporia:pull_item",
       "The pull is REFUSED (a tension carries no verdict) — the run reads the refusal as the contract, not an error to work around",
@@ -30,34 +30,34 @@ describes the required graph + repo `setup` instead of bundling input files.
   {
     "skills": ["aporia-work"],
     "name": "W-2 — pre-merge close is a two-step: the branch sync ATTESTS, the trunk sync closes",
-    "setup": "The product declares canonicalRef: 'main'. APO-9 is a sync-watched bug (closesBy: 'sync') whose node target carries externalRefs into the repo. The fix is implemented on branch apo-9-<slug> and the pre-merge sync (Phase 5, via the aporia-sync skill) runs on that branch.",
-    "query": "Work APO-9 end to end and close out the ticket.",
+    "setup": "The product declares canonicalRef: 'main'. ACME-9 is a sync-watched bug (closesBy: 'sync') whose node target carries externalRefs into the repo. The fix is implemented on branch apo-9-<slug> and the pre-merge sync (Phase 5, via the aporia-sync skill) runs on that branch.",
+    "query": "Work ACME-9 end to end and close out the ticket.",
     "expected_behavior": [
       "Pulls the item by ticket, zooms its targets (pull_context / feature_gaps_spec), and branches apo-9-<slug> so the PR-time sync can match the ticket",
-      "Phase 5 runs the aporia-sync skill; the branch resolve of APO-9 comes back ATTESTED (attested count up, resolved zero) — the item stays OPEN with the 'fix ready — awaiting merge' badge",
+      "Phase 5 runs the aporia-sync skill; the branch resolve of ACME-9 comes back ATTESTED (attested count up, resolved zero) — the item stays OPEN with the 'fix ready — awaiting merge' badge",
       "Reads the attestation as the design, not a failure: the hand-off says the ticket closes when the post-merge sync re-runs the resolve on the canonical ref",
       "Does NOT hand-edit the item's status, re-run the resolve hoping for a different outcome, or claim the ticket is closed",
-      "NEGATIVE: a run that declares APO-9 closed pre-merge — or that treats the attested outcome as an error and retries around the gate — FAILS"
+      "NEGATIVE: a run that declares ACME-9 closed pre-merge — or that treats the attested outcome as an error and retries around the gate — FAILS"
     ]
   },
   {
     "skills": ["aporia-work"],
     "name": "W-3 — directive decision as work order: honor the Rules, stay inside the ticket",
-    "setup": "APO-6 is a directive DECISION (isConstraint: false, closesBy: 'sync') targeting feature:billing.checkout. The feature's context also carries an open Rule (a constraint decision: 'Invoices are immutable once issued'). Elsewhere in the repo sits an unrelated, un-ticketed bug the agent will notice while working.",
+    "setup": "ACME-6 is a directive DECISION (isConstraint: false, closesBy: 'sync') targeting feature:billing.checkout. The feature's context also carries an open Rule (a constraint decision: 'Invoices are immutable once issued'). Elsewhere in the repo sits an unrelated, un-ticketed bug the agent will notice while working.",
     "query": "Pick up ticket 6 from the inbox.",
     "expected_behavior": [
       "aporia:pull_item returns the work order (a directive is workable); targets are zoomed with pull_context, and the feature target is compiled with aporia:feature_gaps_spec",
       "The open Rule from the target's context is honored as a constraint in the implementation — not treated as work, not violated",
       "Stays inside the ticket: the unrelated bug is NOT fixed in this diff — it is recorded as a new item (aporia:record_notes) or named in the hand-off",
       "Branches apo-6-<slug> and closes the loop through the aporia-sync skill, never by editing the item's status",
-      "NEGATIVE: a run that folds the unrelated fix into APO-6's diff, or ignores the Rule, FAILS"
+      "NEGATIVE: a run that folds the unrelated fix into ACME-6's diff, or ignores the Rule, FAILS"
     ]
   },
   {
     "skills": ["aporia-work"],
     "name": "W-4 — claim etiquette: a fresh prior claim is a conversation, not a race",
-    "setup": "APO-12 is a sync-watched task. Another session claimed it ~30 minutes ago (its claimedAt is fresh), so the Inbox already shows it In progress. The repo is available and the fix is easy.",
-    "query": "Pick up APO-12.",
+    "setup": "ACME-12 is a sync-watched task. Another session claimed it ~30 minutes ago (its claimedAt is fresh), so the Inbox already shows it In progress. The repo is available and the fix is easy.",
+    "query": "Pick up ACME-12.",
     "expected_behavior": [
       "Pulls with aporia:pull_item { ticket, claim: true } — the claim rides the pull, not a separate step",
       "Reads previousClaimedAt from the response and recognizes it as FRESH (~30 minutes)",

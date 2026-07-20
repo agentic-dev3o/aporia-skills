@@ -2,16 +2,15 @@
 name: aporia-sync
 description: >-
   Keeps Aporia's living map honest against the code AFTER onboarding — the
-  continuous, diff-scoped re-scan to run before opening a PR or after one merges.
-  Re-inventories only the subsystems a change touched, realizes intended bindings
-  the code now implements, and re-derives each touched feature's Implementation
-  (absent/partial/complete) from coverage read from code — pushing it with aporia:apply_scan,
-  recording new questions/tensions with aporia:record_notes, and CLOSING THE LOOP
-  on sync-watched inbox items with aporia:resolve_items (resolve with code
-  evidence; reopen closed items the code contradicts). Drives the MCP tools — never a
-  database CLI. Triggers: sync this PR to Aporia, update the map after merge,
-  refresh as-built before merging, aporia sync, re-scan the changed code into the
-  map, close the aporia ticket this PR fixes.
+  diff-scoped re-scan to run before opening a PR or after one merges.
+  Re-inventories only the subsystems the change touched (aporia:apply_scan),
+  re-derives each touched feature's Implementation from coverage read from code,
+  flags open questions/tensions whose premise the code moved (comment, never
+  close), and closes sync-watched inbox items with code evidence
+  (aporia:resolve_items — resolve, reopen on contradiction, or attest pre-merge).
+  Use when syncing a PR to Aporia, updating the map after a merge, refreshing
+  as-built before merging, re-scanning changed code into the map, or closing the
+  Aporia ticket a PR fixes.
 ---
 
 # Aporia PR sync
@@ -49,12 +48,13 @@ Copy this checklist into your response and check off each phase:
 
 ```
 Sync progress:
-- [ ] Phase 0 — Ground: aporia:pull_constitution; the diff's touched scopes; the branch's ticket (apo-<n>); mint the run's sessionId + capture observed{ref,sha}
+- [ ] Phase 0 — Ground: aporia:pull_constitution; the diff's touched scopes; the branch's ticket (`<code>-<n>`); mint the run's sessionId + capture observed{ref,sha}
 - [ ] Phase 1 — Diff scope: which subsystems the change actually touched
 - [ ] Phase 2 — Re-inventory + distill the touched slices (D1–D4 + D6)
 - [ ] Phase 3 — Re-derive coverage: bindings as_built + deficiency flags read from code (the Realization Probe)
 - [ ] Phase 4 — aporia:apply_scan per touched scope (sessionId + observed on every page; completeScope on its final page)
 - [ ] Phase 5 — aporia:record_notes: new questions/tensions; flag each built-but-mocked feature's missing side
+- [ ] Phase 5b — Premise check: comment on open questions/tensions whose premise the code moved — flag only, never close
 - [ ] Phase 6 — aporia:resolve_items: close sync-watched items the code now proves; reopen what it contradicts
 ```
 
@@ -67,7 +67,7 @@ Sync progress:
 - a **`sessionId`** — one fresh UUID for this whole sync run (e.g. `uuidgen`, or any random UUID). Hold it and pass it **unchanged** on **every** `aporia:apply_scan` page of **every** scope you push below. It groups a scope's pages into one run so the final `completeScope` page can't tombstone the earlier pages of the same run (Phase 4), and it lets Aporia detect a *concurrent* sync racing the same scope.
 - an **`observed`** worldline — `{ ref, sha }` from git: `git rev-parse --abbrev-ref HEAD` for `ref` and `git rev-parse HEAD` for `sha` (add `dirty: true` if `git status --porcelain` is non-empty). Pass it on every `apply_scan` too — it stamps each node/edge with which code state observed it.
 
-Also read the branch name: **`apo-<n>-…` names the ticket this diff intends to close** (the /aporia-work convention). Note the number — Phase 6 checks that item's evidence first.
+Also read the branch name: **`<code>-<n>-…` names the ticket this diff intends to close** (`<code>` is the product's `shortCode` lowercased, from `pull_constitution` — the /aporia-work convention). Note the number — Phase 6 checks that item's evidence first.
 
 ### Phase 1 — Diff scope (the whole point — stay narrow)
 
@@ -111,11 +111,17 @@ Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` o
 
 Never invent rationale, and never re-author intent — if the *why* of a change wasn't stated, it's a question for the team, not a decision. The `blocksImplementation` flag is the agent's counterpart to the canvas's human *Flag as partial*: both can only hold a feature below complete, never raise it.
 
+### Phase 5b — Premise check (flag, never close)
+
+The scan just read the nodes that open **questions and tensions** hang on — so it is the moment to notice a **contradicted premise**: the question assumes a module that this PR deleted, the tension's second side no longer exists, the code moved under the debate. When you find one, add a comment to that item's thread — `aporia:comment_item { ticket, body }` — citing the code fact that moved (file/symbol), so the human adjudicating it sees the new ground.
+
+**The hard line (the collaboration model's evidence table): an epistemic item closes only through a human Decision. You NEVER close or resolve a question or a debate tension yourself — not via `resolve_items`, not by proposing it as "obviously moot". The one exception is the `blocksImplementation` deficiency flag (a sync-watched tension whose closure evidence IS code): Phase 6 resolves that one with the evidence, exactly as Phase 5 describes.** A contradicted premise is CONTEXT for the human's verdict, not the verdict: you flag it with a comment, the human decides whether the item is answered, reframed, or superseded. Comment — never close.
+
 ### Phase 6 — Resolve the watched items (the close half of the loop)
 
 Sync doesn't just report structure — it settles the **inbox items whose closure is code-evident**. Gather the candidates:
 
-1. the **branch ticket** from Phase 0 (`apo-<n>` — the item this diff explicitly set out to close);
+1. the **branch ticket** from Phase 0 (`<code>-<n>` — the item this diff explicitly set out to close);
 2. the **open notes on the nodes you re-scanned** — `pull_context` notes carry `shortId` and `closesBy`; every open one with `closesBy: "sync"` (bugs, directive decisions, agent-recorded deficiency flags, watched code chores) is a candidate — a now-stale `blocksImplementation` flag whose mock this PR replaced belongs here (Phase 3).
 
 For each candidate, judge against the code you just scanned — then one `aporia:resolve_items` call (pass the same `observed` `{ ref, sha }` from Phase 0; ≤50 items per call — page past that) with per-item verdicts. On a **gated (off-canonical) run**, also check for an open PR — `gh pr view --json number,url` — and attach `pullRequest: { number, url }` to each branch `resolve`, so the attestation carries the link (the Inbox reads *"Fix ready · PR #n"*). No PR yet? Note in your hand-off that re-running `aporia:resolve_items` after opening it upgrades the attestation (attestation is latest-wins). The server guards the field: a `pullRequest` on a canonical resolve or on a `reopen` is per-item **skipped** — attach it only on the off-canonical resolve path.
@@ -137,7 +143,7 @@ The response reports per-item outcomes `{ resolved, reopened, attested, skipped 
 - [ ] Each built-but-mocked Partial feature carries a `blocksImplementation` flag citing its missing side; each new contradiction is a tension, not a silent overwrite.
 - [ ] Every `aporia:apply_scan` returned `skippedEdges: 0` (or each skip is understood).
 - [ ] Every note recorded has a ≤60-char headline `title` and a markdown `body` ([content-style](references/shared/content-style.md)).
-- [ ] The branch's `apo-<n>` ticket was checked, and every sync-watched item on the touched nodes got a verdict: resolved with cited evidence, reopened on contradiction, or deliberately left for lack of evidence.
+- [ ] The branch's `<code>-<n>` ticket was checked, and every sync-watched item on the touched nodes got a verdict: resolved with cited evidence, reopened on contradiction, or deliberately left for lack of evidence.
 
 ## Anti-patterns (reject)
 

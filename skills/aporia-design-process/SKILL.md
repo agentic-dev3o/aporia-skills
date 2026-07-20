@@ -1,15 +1,15 @@
 ---
 name: aporia-design-process
 description: >-
-  Designs a feature's FUNCTIONAL PROCESS — a swimlane / sequence the team
-  intends — into Aporia's living map through the Aporia MCP server. Elicits the
-  human's mental model of how a feature should work, drafts the lanes / steps /
-  flows for them to react to, validates the shape with them, then pushes it with
-  aporia:record_process for the team to polish in the canvas editor. The DESIGN
-  door (intended behavior) — distinct from aporia-session-notes, which records
-  OBSERVED behavior traced from code. Triggers: design / draw / map the process
-  for a feature, map out how a feature should work, let's build the flow /
-  swimlane / sequence for X, model this feature's behavior.
+  Designs a feature's INTENDED functional process — the swimlane of lanes,
+  steps, and flows the team means to build — into Aporia's living map. Elicits
+  the human's mental model, drafts the shape for them to react to (guess and
+  mark, never interrogate), validates it, then pushes with aporia:record_process
+  for polishing in the canvas editor. The DESIGN door — distinct from
+  aporia-session-notes, which records behavior OBSERVED from code. Use when
+  asked to design, draw, or map the process for a feature, map out how a feature
+  should work, build the flow / swimlane / sequence for X, or model a feature's
+  behavior.
 ---
 
 # Aporia design process

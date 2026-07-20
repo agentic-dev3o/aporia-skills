@@ -2,19 +2,15 @@
 name: aporia-onboard
 description: >-
   Onboards a codebase into Aporia's living map through the Aporia MCP server —
-  a deep scan that becomes a graph a founder recognizes. Grounds on the product
-  Constitution first: when the thesis, personas, or principles are empty it authors
-  them WITH the human (aporia:upsert_thesis + aporia:upsert_principles + the
-  aporia-persona-mapper interview) before scanning, so every feature binds to a
-  real Ring 0. Inventories the repo,
-  distills it into domain entities/components (filtering plumbing, reclustering
-  to the right grain, naming in the team's language with evidence), proposes
-  features, then interviews the human for the intent the code can't show, and
-  pushes the result with aporia:apply_scan / aporia:record_notes. Drives the MCP tools — never
-  a database CLI. Triggers: onboard this repo into Aporia, scan the code into the
-  map, bootstrap the product graph, define the thesis, personas, and principles,
-  first as-built scan of an existing codebase. (For the per-PR re-scan of an
-  already-mapped product, use aporia-sync instead.)
+  the one-time deep scan that becomes a graph a founder recognizes in 30 seconds.
+  Grounds on the product Constitution first (an empty thesis / personas /
+  principles is authored WITH the human before scanning), distills the repo into
+  domain entities, components, and features with cited evidence, elicits the
+  intent the code can't show, and pushes with aporia:apply_scan. Use when
+  onboarding a repo into Aporia, scanning code into the map, bootstrapping the
+  product graph, defining the thesis, personas, and principles, or running the
+  first as-built scan of an existing codebase. For the per-PR re-scan of an
+  already-mapped product, use aporia-sync instead.
 ---
 
 # Aporia onboarding scan
