@@ -45,10 +45,13 @@ Work progress:
 
 `aporia:pull_item { ticket: "8", claim: true }` — the **bare number always works**, whatever this product's prefix is, so prefer it over guessing a prefixed form. `claim: true` stamps an anonymous, advisory claim so the Inbox shows the ticket **In progress** and a parallel session sees it's being worked. You get:
 
-- **item** — kind, title, markdown body, rationale, priority, `closesBy` (how it will close), `claimedAt`;
+- **item** — kind, title, markdown body, rationale, priority, `claimedAt` (how it closes derives from its kind);
 - **targets** — the map spots it's about: node targets carry the stable `key` and `externalRefs` (the files to read first); a bug's note target carries the **decision it traces to** (the intent the code contradicts — your fix closes THAT gap, nothing more);
 - **guidance** — branch convention and the next tool to call;
+- **attachments** — the artifacts hanging off this ticket, as METADATA (`attachmentId`, `filename`, `fileType`, `size`, `createdAt`). A ticket whose real spec is an attached file says so here — read it with `aporia:read_attachment { attachmentId }` before you plan, or you will build from a body that only references it;
 - **previousClaimedAt** — the prior claim's timestamp (`null` if none; the claim route only — a plain read always reports `null`).
+
+**Reading an attachment.** `aporia:read_attachment` takes the `attachmentId` from a listing — never a URL, never an id you assembled. Markdown/HTML come back as UTF-8 text, paged: when `truncated` is true, call again with `offsetBytes` set to the returned `nextOffset` (and an optional `length` to take smaller bites) until it is false. A PDF comes back whole as base64, or is refused if it is over the read ceiling — that one the human opens in the app.
 
 **Claim collision:** a FRESH `previousClaimedAt` (within roughly two hours) means someone is likely mid-flight — stop and surface it to the human before continuing; double-working produces rival diffs. Stale or `null` → proceed. The claim is etiquette, never a lock: it locks nobody out, and you never hand-clear it.
 
@@ -63,7 +66,9 @@ Work progress:
 
 ### Phase 2 — Zoom
 
-`aporia:pull_context { key }` on each node target — its data, edges, neighbors, and the open notes (decisions and Rules you must honor carry their `shortId` and `closesBy`). If a target is a **feature**, compile the real spec first: `aporia:feature_gaps_spec { key }` — it returns the unbuilt gap, the decisions to honor, `openBugs` to fix along the way, and a readiness verdict (a `blocked` spec means open questions gate the work — back to Phase 1's refusal table).
+`aporia:pull_context { key }` on each node target — its data, edges, neighbors, the open notes (decisions and Rules you must honor carry their `shortId`), and `attachments`: the node's own files, plus each note's, again as metadata to read on purpose. If a target is a **feature**, compile the real spec first: `aporia:feature_gaps_spec { key }` — it returns the unbuilt gap, the decisions to honor, `openWork` (open bugs AND tasks) to close along the way, and a readiness verdict (a `blocked` spec means open questions gate the work — back to Phase 1's refusal table).
+
+**Read each decision's `comments` before you build from its body.** Decisions and `openWork` arrive newest-first, each carrying the tail of its thread (`moreComments` means older ones exist — `aporia:pull_item { ticket }` for the whole thread). An item stays open and in force while part of its text goes stale, so a comment saying *"we no longer deploy this to that service"* is the current truth even though the body still says otherwise. Where the thread and the body disagree, the newer comment wins. If you confirm from the code that the body itself is wrong, correct it with `aporia:update_item { ticket, body }` — the next agent reads the body, not your session.
 
 ### Phase 3 — Branch + plan
 
@@ -71,15 +76,15 @@ Branch as **`<code>-<n>-<short-slug>`** — `<code>` is this product's `shortCod
 
 ### Phase 4 — Implement + test
 
-**Tier the work first.** A one-file fix, config change, or pattern replication → implement solo, right here. Work that is cross-layer, has UI/UX taste at stake, or is high blast-radius → if a graded-build harness skill is installed (e.g. `agent-team`), hand the build to it instead of implementing solo: Phase 0–2's pull IS its contract grounding (don't re-pull — the constitution, gap spec, decisions-to-honor, and `openBugs` materialize into its contract, with this ticket as the item ref), and its passing build closes the loop with the same aporia-sync as Phase 5 — don't run the sync twice. No such skill installed → implement solo with care proportional to the blast radius.
+**Tier the work first.** A one-file fix, config change, or pattern replication → implement solo, right here. Work that is cross-layer, has UI/UX taste at stake, or is high blast-radius → if a graded-build harness skill is installed (e.g. `agent-team`), hand the build to it instead of implementing solo: Phase 0–2's pull IS its contract grounding (don't re-pull — the constitution, gap spec, decisions-to-honor, and `openWork` materialize into its contract, with this ticket as the item ref), and its passing build closes the loop with the same aporia-sync as Phase 5 — don't run the sync twice. No such skill installed → implement solo with care proportional to the blast radius.
 
-Normal engineering discipline applies (project rules, tests, lint). Stay inside the ticket: a bug fix closes the traced decision's gap — scope creep belongs in new items (`aporia:record_notes`), not in this diff. Mid-flight findings ABOUT this ticket — progress, evidence, a surprise in its scope — go to its thread with `aporia:comment_item { ticket, body }`, never a new item; diff narration stays in the PR body.
+Normal engineering discipline applies (project rules, tests, lint). Stay inside the ticket: a bug fix closes the traced decision's gap — scope creep belongs in new items (`aporia:record_notes`), not in this diff. Mid-flight findings ABOUT this ticket — progress, evidence, a surprise in its scope — go to its thread with `aporia:comment_item { ticket, body }`, never a new item; diff narration stays in the PR body. If the work proves that an **open** item's own text is wrong (this ticket's or one it depends on), correct the text with `aporia:update_item { ticket, body }` and comment the reasoning — never supersede a live item to fix a line inside it, which would close work this PR may still be about to close.
 
 ### Phase 5 — Close the loop
 
-Run the **aporia-sync** skill (install it alongside this one — this phase depends on it): it re-scans the touched scopes (`apply_scan`), then calls `aporia:resolve_items` citing what the code now proves — which closes this ticket if it's sync-watched (`closesBy: "sync"`), with provenance reading *scan-verified*.
+Run the **aporia-sync** skill (install it alongside this one — this phase depends on it): it re-scans the touched scopes (`apply_scan`), then calls `aporia:resolve_items` citing what the code now proves. A **bug or directive decision** closes on that evidence, provenance reading *scan-verified*; a **task** is attested and a human confirms it in one click — either way the evidence lands.
 
-**Pre-merge, the close is a two-step.** If the product declares a canonical ref and you're still on your `<code>-<n>` branch, that sync **attests** the ticket rather than closing it: the item stays **open** with a *"fix ready — awaiting merge"* badge (the fix is proven, just not on the trunk yet). The ticket **closes** when the same sync runs **after the merge, on the canonical ref** — which drops the attestation and marks it resolved. So opening the PR earns the badge; merging and re-syncing on the trunk earns the close. Either transition (attest or close) also clears the Phase 1 claim — the evidence-backed `resolve_items` is what drops the "In progress" stamp, never a hand-edit. A manual item instead waits for a teammate to attest it — say so in your handoff. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
+**Pre-merge, the close is a two-step.** If the product declares a canonical ref and you're still on your `<code>-<n>` branch, that sync **attests** the ticket rather than closing it: the item stays **open** with a *"fix ready — awaiting merge"* badge (the fix is proven, just not on the trunk yet). The ticket **closes** when the same sync runs **after the merge, on the canonical ref** — which drops the attestation and marks it resolved. So opening the PR earns the badge; merging and re-syncing on the trunk earns the close. Either transition (attest or close) also clears the Phase 1 claim — the evidence-backed `resolve_items` is what drops the "In progress" stamp, never a hand-edit. An item that is a teammate's to close is attested the same way — the sync cites your evidence, the item stays open, and they confirm in one click. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
 
 ## Acceptance checklist
 

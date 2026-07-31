@@ -4,7 +4,7 @@ description: >-
   Keeps Aporia's living map honest against the code AFTER onboarding — the
   diff-scoped re-scan to run before opening a PR or after one merges.
   Re-inventories only the subsystems the change touched (aporia:apply_scan),
-  re-derives each touched feature's Implementation from coverage read from code,
+  re-derives each touched feature's Built state from the code evidence it can cite,
   flags open questions/tensions whose premise the code moved (comment, never
   close), and closes sync-watched inbox items with code evidence
   (aporia:resolve_items — resolve, reopen on contradiction, or attest pre-merge).
@@ -21,26 +21,26 @@ Run it **before opening a PR** (preview the delta the change creates) or **after
 
 ## The bar
 
-The same Recognition Test as onboarding, plus one sync-specific line: **after a sync, every feature the PR touched reads its true Implementation level** — `Implemented` only if the code really ships it end-to-end, `Partial` if it's gated / one-sided / mocked, `Not implemented` if it's still just intent. A sync that leaves a mocked feature reading `Implemented` has failed.
+The same Recognition Test as onboarding, plus one sync-specific line: **after a sync, every feature the PR touched reads its true Built state** — `Built` only if the code really carries it, `Not built` if it's still just intent. A sync that leaves a feature reading `Built` when no code carries it has failed.
 
-The hard line is unchanged: **report structure with evidence; never fabricate intent.** Sync touches as-built reality and the derived Implementation level — it never authors or rewrites the *why*. Preserve authored intent and notes verbatim; a re-scan that rediscovers an authored node realizes it, it does not clobber it.
+The hard line is unchanged: **report structure with evidence; never fabricate intent.** Sync touches as-built reality — it never authors or rewrites the *why*. Preserve authored intent and notes verbatim; a re-scan that rediscovers an authored node realizes it, it does not clobber it.
 
-## The Implementation axis (what your scan controls)
+## The Built axis (what your scan controls)
 
-A feature's Implementation level is **derived from coverage** — it is never a grade you write into a field. The map rolls it up from two things your sync controls, read against the **[Realization Probe](references/shared/realization-probe.md)** (its five signals + three actions):
+**Built is BINARY and scan-owned: a feature is Built when it is `as_built` AND carries at least one `externalRef` of kind `code`.** It is never a grade you write into a field, and no human click can raise it. Read it against the **[Realization Probe](references/shared/realization-probe.md)** (its five signals + three actions). Two things your sync controls:
 
-1. **its bindings** — the `realized_by` / `touches` edges from the feature to the components/entities that implement it, and whether each target is `as_built` (real in the repo) or still `intended` (planned);
-2. **deficiency flags** — an open note you set with `blocksImplementation: true` when the structure exists but is mocked / stubbed / one-sided.
+1. **the feature's own evidence** — reporting it `as_built` with the `externalRefs` (kind `code`) that carry it. This, and only this, is what makes it Built;
+2. **its bindings** — the `realized_by` / `touches` edges to the components/entities it uses. These describe the *shape* of the work; they never decide Built on their own.
 
-The coverage table — which combinations of bindings and flags read *Not implemented / Partial / Implemented* — is in that same **[realization-probe](references/shared/realization-probe.md)** reference.
+That second line is the whole point: a feature is not Built because the components it points at happen to exist. A cited document belongs in `externalRefs` with `kind: "doc"` — shown to the team, never counted as evidence.
 
-`Implemented` is reachable **only through this scan** — it needs `as_built` code evidence a manual edit can't fabricate. So you never *assert* a level; you report structure + edges honestly and let coverage compute it. The trap: a feature whose realizing component exists in the repo but is a **mock** will read `Implemented` from structure alone — flag it `blocksImplementation` (citing the missing side) to hold it at Partial until the real logic lands. `confidence` rides only authored intent (a `planned` feature's `hypothesis`), never scanned structure — it plays no part in this level.
+**There is no Partial.** A feature that is built but mocked, gated or one-sided is Built **plus an open `task`** (or a `bug`, if it contradicts a decision) naming what's missing. That item carries a title, an owner and closure evidence — strictly more than a flag ever did — and a later sync closes it on that evidence. A node carries **no certainty field at all** — "how sure are we?" is read off its open discourse, so an unsettled node carries an open question rather than a grade you type.
 
 ## How this skill reaches Aporia
 
 Through the **Aporia MCP server only**, pinned to one product (org + product derived from the API key — you never pass them). Call tools fully-qualified as `aporia:*` so they resolve alongside other MCP servers. If they're unavailable, stop and tell the user to configure the Aporia MCP server (`APORIA_API_KEY` + `APORIA_PRODUCT_ID`).
 
-Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull_context` (what's already mapped + a feature's current bindings), `aporia:apply_scan` (push the refreshed structure + edges), `aporia:record_notes` (new questions/tensions, and `blocksImplementation` deficiency flags on built-but-mocked features), `aporia:resolve_items` (close sync-watched items with the evidence this scan produced; reopen closed items it contradicts). (To go the other way — compile a feature's gap into a build plan before writing code — use `aporia:feature_gaps_spec`; this skill closes the loop that opens.)
+Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull_context` (what's already mapped + a feature's current bindings), `aporia:apply_scan` (push the refreshed structure + edges), `aporia:record_notes` (new questions/tensions, and the tasks/bugs that name what a built-but-mocked feature is still missing), `aporia:resolve_items` (close sync-watched items with the evidence this scan produced; reopen closed items it contradicts). (To go the other way — compile a feature's gap into a build plan before writing code — use `aporia:feature_gaps_spec`; this skill closes the loop that opens.)
 
 ## Workflow
 
@@ -51,7 +51,7 @@ Sync progress:
 - [ ] Phase 0 — Ground: aporia:pull_constitution; the diff's touched scopes; the branch's ticket (`<code>-<n>`); mint the run's sessionId + capture observed{ref,sha}
 - [ ] Phase 1 — Diff scope: which subsystems the change actually touched
 - [ ] Phase 2 — Re-inventory + distill the touched slices (D1–D4 + D6)
-- [ ] Phase 3 — Re-derive coverage: bindings as_built + deficiency flags read from code (the Realization Probe)
+- [ ] Phase 3 — Re-derive Built: the feature's own code evidence + its bindings, read from code (the Realization Probe)
 - [ ] Phase 4 — aporia:apply_scan per touched scope (sessionId + observed on every page; completeScope on its final page)
 - [ ] Phase 5 — aporia:record_notes: new questions/tensions; flag each built-but-mocked feature's missing side
 - [ ] Phase 5b — Premise check: comment on open questions/tensions whose premise the code moved — flag only, never close
@@ -77,15 +77,15 @@ Read the change: `git diff` (working tree, or the PR's merge base..head). Map th
 
 For each touched scope, gather the raw facts *now* (entities/components/edges) and apply D1–D4 + D6 from the extraction protocol — exactly as onboarding, but only over the changed slice. D6 rides every re-push: kinds from the decision table (`ui`/`trigger`/`agent`/`tool`/`service`/`store`/`external`/`module`), a ≤4-word verb `label` on every `depends_on` edge (conditions included — "gated: ENABLE_V4"), `data.sub` refreshed when the signature changed (route, step caps, tool counts — concrete numbers), `data.domain` on externals, lifecycle in the group name. A re-scan that strips an existing verb label or `sub` is a regression, not a simplification. New code → new nodes/edges. Deleted code → omit it from the scope's complete batch so the tombstone sweep removes it. Renamed/moved code → same stable `key`, refreshed `externalRefs` (reconciliation handles the move).
 
-### Phase 3 — Re-derive coverage (move the Implementation axis)
+### Phase 3 — Re-derive Built (report the evidence, not a grade)
 
-You don't write a grade — you make the **bindings** and **deficiency flags** tell the truth, and coverage computes the level. For every feature the diff touched, re-walk the **Realization Probe** against the current code — surface, logic, persistence/IO, data realness, gating — then:
+You don't write a grade — you report the **evidence** and the **bindings** honestly, and the map reads Built from them. For every feature the diff touched, re-walk the **Realization Probe** against the current code — surface, logic, persistence/IO, data realness, gating — then:
 
-- a feature whose realizing component/entity **landed** this PR → report that structure `as_built` and wire its `realized_by` / `touches` edge; with every binding as_built and no open deficiency it reads **Implemented**;
-- a feature still backed by a **mock / stub / `TODO` / one side only**, even though the file exists → report the structure as_built (it IS in the repo) AND flag the feature `blocksImplementation` naming the missing side (Phase 5) → **Partial**;
-- a feature whose realizing structure is **genuinely not built yet** → leave that binding `planned` (intended): no as_built binding reads **Not implemented**, some reads **Partial**;
-- an `intended` (planned) feature the code now implements → report its structure as_built (omit `planned`) and its edges — the scan realizes the binding (intended → as_built) and coverage flips the feature up;
-- a feature whose real logic **replaced a mock** this PR → its old `blocksImplementation` flag is now stale. An agent-recorded flag is **sync-watched** — resolve it in Phase 6 (`aporia:resolve_items`, citing the landed code) so coverage can read the feature Implemented. A **human's** canvas flag is theirs to clear: name it stale in your handoff instead of forcing it.
+- a feature the code now **carries** → report it `as_built` with its own `externalRefs` (kind `code`), and wire its `realized_by` / `touches` edges → **Built**;
+- a feature still backed by a **mock / stub / `TODO` / one side only**, even though the file exists → report the structure as_built (it IS in the repo) AND file a **task** on the feature naming the missing side (Phase 5). It reads Built, with an open item saying what's left — which is the honest reading, not a downgrade;
+- a feature whose realizing structure is **genuinely not built yet** → leave that binding `planned` (intended), and don't claim the feature's own evidence: it reads **Not built**;
+- an `intended` (planned) feature the code now implements → report it as_built (omit `planned`) with its own `externalRefs` of kind `code`, plus its structure and edges — the scan realizes it (intended → as_built) and it reads Built;
+- a feature whose real logic **replaced a mock** this PR → the task that named that mock is now done. If it is sync-watched, resolve it in Phase 6 (`aporia:resolve_items`, citing the landed code); if it is a teammate's to close, resolve it anyway — the scan **attests** it with your evidence rather than closing it, and the human confirms in one click.
 
 Never report an unbuilt surface as `as_built`, and never try to raise a feature by writing a grade — the level is read from the structure you can cite.
 
@@ -103,26 +103,26 @@ Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` o
 
 ### Phase 5 — Record what the change surfaced
 
-`aporia:record_notes` for the discourse a change creates — each targeting the node(s) it's about by `key`, each a ≤60-char headline `title` over a markdown `body` sized per [content-style](references/shared/content-style.md); a `blocksImplementation` flag's body names the mock / the `TODO` / the missing side in a line or two:
+`aporia:record_notes` for the discourse a change creates — each targeting the node(s) it's about by `key`, each a ≤60-char headline `title` over a markdown `body` sized per [content-style](references/shared/content-style.md); a missing-side task's body names the mock / the `TODO` / the missing side in a line or two:
 
-- a **`blocksImplementation` deficiency flag** (a `tension` note with `blocksImplementation: true`, targeting the feature) on any feature held at **Partial** because its structure is built-but-mocked — naming the missing side / the mock / the `TODO`. This IS the Partial signal and the visible "what's left to build" beside the pill. It lands **sync-watched**: a later sync that proves the missing side landed resolves it with that evidence (Phase 6). (A feature that's Partial only because a binding is still `planned` needs no flag — the unbuilt binding already says so.)
+- a **`task`** (or a **`bug`**, when the gap contradicts a decision the team already made) on any feature whose structure is built-but-mocked — naming the missing side / the mock / the `TODO`. This is the visible "what's left to build", and unlike the flag it replaces it carries a title, an owner and closure evidence. A later scan that proves the missing side landed attests it, and a human confirms. (A feature whose binding is still `planned` needs no task — the unbuilt binding already says so.)
 - a **tension** when the new code **contradicts an authored decision** (drift) — target both the decision note and the thing that breaks it;
-- a **question** for a genuinely new unknown the change raises.
+- a **question** for a new unknown the change raises **that gates further work** — someone owes an answer before something can proceed. A finding that is merely interesting, or that you could act on tomorrow without anyone deciding anything, is not a question; a sync that files one per observation turns the inbox into a log. **And if a human is in this session, ask them before you file** — a question they answer in a sentence should become a decision (or nothing at all), not a triage row addressed to someone who is already reading. File only what they defer, decline to settle now, or aren't the right person for. Running unattended (a post-merge or CI sync, nobody to ask) — file it.
 
-Never invent rationale, and never re-author intent — if the *why* of a change wasn't stated, it's a question for the team, not a decision. The `blocksImplementation` flag is the agent's counterpart to the canvas's human *Flag as partial*: both can only hold a feature below complete, never raise it.
+Never invent rationale, and never re-author intent — if the *why* of a change wasn't stated, it's a question for the team, not a decision. (`blocksImplementation` is deprecated — the server accepts and ignores it. File the task instead.)
 
 ### Phase 5b — Premise check (flag, never close)
 
 The scan just read the nodes that open **questions and tensions** hang on — so it is the moment to notice a **contradicted premise**: the question assumes a module that this PR deleted, the tension's second side no longer exists, the code moved under the debate. When you find one, add a comment to that item's thread — `aporia:comment_item { ticket, body }` — citing the code fact that moved (file/symbol), so the human adjudicating it sees the new ground.
 
-**The hard line (the collaboration model's evidence table): an epistemic item closes only through a human Decision. You NEVER close or resolve a question or a debate tension yourself — not via `resolve_items`, not by proposing it as "obviously moot". The one exception is the `blocksImplementation` deficiency flag (a sync-watched tension whose closure evidence IS code): Phase 6 resolves that one with the evidence, exactly as Phase 5 describes.** A contradicted premise is CONTEXT for the human's verdict, not the verdict: you flag it with a comment, the human decides whether the item is answered, reframed, or superseded. Comment — never close.
+**The hard line (the collaboration model's evidence table): an epistemic item closes only through a human Decision. You NEVER close or resolve a question or a tension yourself — not via `resolve_items`, not by proposing it as "obviously moot".** A contradicted premise is CONTEXT for the human's verdict, not the verdict: you flag it with a comment, the human decides whether the item is answered, reframed, or superseded. Comment — never close.
 
 ### Phase 6 — Resolve the watched items (the close half of the loop)
 
 Sync doesn't just report structure — it settles the **inbox items whose closure is code-evident**. Gather the candidates:
 
 1. the **branch ticket** from Phase 0 (`<code>-<n>` — the item this diff explicitly set out to close);
-2. the **open notes on the nodes you re-scanned** — `pull_context` notes carry `shortId` and `closesBy`; every open one with `closesBy: "sync"` (bugs, directive decisions, agent-recorded deficiency flags, watched code chores) is a candidate — a now-stale `blocksImplementation` flag whose mock this PR replaced belongs here (Phase 3).
+2. the **open notes on the nodes you re-scanned** — `pull_context` notes carry a `shortId`. Every open **bug, task or directive decision** is a candidate; how it closes derives from its kind, so you never read a per-item flag. The missing-side task whose mock this PR replaced belongs here (Phase 3).
 
 For each candidate, judge against the code you just scanned — then one `aporia:resolve_items` call (pass the same `observed` `{ ref, sha }` from Phase 0; ≤50 items per call — page past that) with per-item verdicts. On a **gated (off-canonical) run**, also check for an open PR — `gh pr view --json number,url` — and attach `pullRequest: { number, url }` to each branch `resolve`, so the attestation carries the link (the Inbox reads *"Fix ready · PR #n"*). No PR yet? Note in your hand-off that re-running `aporia:resolve_items` after opening it upgrades the attestation (attestation is latest-wins). The server guards the field: a `pullRequest` on a canonical resolve or on a `reopen` is per-item **skipped** — attach it only on the off-canonical resolve path.
 
@@ -132,19 +132,19 @@ For each candidate, judge against the code you just scanned — then one `aporia
 
 The response reports per-item outcomes `{ resolved, reopened, attested, skipped }`.
 
-**The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not) — with the PR link when you attached `pullRequest`. That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. Read the `skipped` reasons too (a manual item is a teammate's to attest — say so in your handoff rather than forcing it). Never close an item whose evidence you didn't actually scan this run.
+**The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not) — with the PR link when you attached `pullRequest`. That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. **A scan attests what it cannot close.** The same `attested` outcome covers the other way authority can be missing: an item whose KIND is a human's to close (a task). Do **not** withhold a `resolve` because you lack the authority — cite the evidence and let the server decide. It stamps an `awaiting: "confirm"` attestation, the item stays open, and the human closes it in one click with your reasoning already attached. Withholding is how evidence dies: a task proven by a scan and never attested sat open six days with a comment saying it had shipped. Never close an item whose evidence you didn't actually scan this run — but never drop evidence you did.
 
 ## Acceptance checklist
 
 - [ ] Only the scopes the diff touched were re-scanned; untouched scopes left alone.
-- [ ] Every touched feature reads its TRUE Implementation level — no mock left reading `Implemented`, no shipped feature stuck at `Partial`.
+- [ ] Every touched feature reads its TRUE Built state — nothing reads `Built` without its own code evidence, nothing shipped reads `Not built`.
 - [ ] Intended features the code now implements were realized (intended → as_built); deleted code tombstoned via `completeScope`.
 - [ ] Authored intent and notes preserved verbatim — reconciled by `key`, never clobbered.
-- [ ] Each built-but-mocked Partial feature carries a `blocksImplementation` flag citing its missing side; each new contradiction is a tension, not a silent overwrite.
+- [ ] Each built-but-mocked feature carries an open task/bug citing its missing side; each new contradiction is a tension, not a silent overwrite.
 - [ ] Every `aporia:apply_scan` returned `skippedEdges: 0` (or each skip is understood).
 - [ ] Every note recorded has a ≤60-char headline `title` and a markdown `body` ([content-style](references/shared/content-style.md)).
 - [ ] The branch's `<code>-<n>` ticket was checked, and every sync-watched item on the touched nodes got a verdict: resolved with cited evidence, reopened on contradiction, or deliberately left for lack of evidence.
 
 ## Anti-patterns (reject)
 
-Re-scanning the whole repo for a one-package change · `completeScope` on a scope you only partially re-scanned (the server **refuses** a disproportionate sweep with a `BAD_REQUEST` — don't try to force it; drop `completeScope`, re-scan the whole scope under one sessionId, or `dryRun` to preview first) · reporting a mock's structure as_built without a `blocksImplementation` flag, so it reads Implemented · trying to raise a feature by writing a grade instead of reporting the bindings you can cite · overwriting an authored `intent` or decision with scan output · inventing a rationale for why the code changed · resolving an item with "done" instead of a citable code fact · reopening a superseded item (that's a human verdict — the tool refuses it anyway).
+Re-scanning the whole repo for a one-package change · `completeScope` on a scope you only partially re-scanned (the server **refuses** a disproportionate sweep with a `BAD_REQUEST` — don't try to force it; drop `completeScope`, re-scan the whole scope under one sessionId, or `dryRun` to preview first) · reporting a mock's structure as_built without filing the task that names the missing side · claiming a feature's own `externalRefs` when no code carries it · citing a document (`kind: "doc"`) as if it were code evidence · trying to raise a feature by writing a grade instead of reporting the evidence you can cite · overwriting an authored `intent` or decision with scan output · inventing a rationale for why the code changed · filing a question at a human who is in the session with you instead of asking them · filing a question that gates nothing, turning the inbox into a log of things the scan noticed · resolving an item with "done" instead of a citable code fact · reopening a superseded item (that's a human verdict — the tool refuses it anyway).

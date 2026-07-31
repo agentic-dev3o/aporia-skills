@@ -5,7 +5,8 @@ description: >-
   decisions made (with rationale), the questions left open, the tensions where
   code diverged from intent — routed by the rule: owes a verdict → new item
   (aporia:record_notes); context on an existing item → comment
-  (aporia:comment_item); owes nobody → PR body. Also records a feature's
+  (aporia:comment_item); an existing item's own text is now wrong → correct it
+  (aporia:update_item); owes nobody → PR body. Also records a feature's
   OBSERVED behavior — the swimlane its code actually follows — with
   aporia:record_process (to design an INTENDED process WITH the human, use
   aporia-design-process instead). Use when recording a session's decisions in
@@ -24,13 +25,21 @@ You reach Aporia through the **MCP server only**. It's pinned to one product; yo
 
 **Never fabricate rationale.** If the *why* behind a choice wasn't actually established in the session, it is an **open question**, not a decision. Every note must trace to a real moment in this session — something decided, asked, or observed-as-diverging. No invented confidence.
 
-## The routing rule — item vs comment vs PR body
+## The routing rule — item vs comment vs correction vs PR body
 
-Not everything a session produces deserves a **new item**. Route by one question — *does this owe a human a verdict, or a unit of work?*
+Not everything a session produces deserves a **new item**. Route by two questions, in order — *does this owe a human a verdict, or a unit of work?* and, if so, *is that human in this session right now?*
 
-- **A new item** (`aporia:record_notes`) — only when it does: an open question someone must answer, a tension to adjudicate, a decision made, a bug/task to build. An item is a triage row a human must process; over-filing buries the verdicts the team actually owes.
+- **Ask, first** — when a human is working with you and the verdict is theirs to give, **put the question to them instead of filing it**. An item addressed to someone who is already reading your output is the slowest possible way to ask them; they answer in a sentence, and what you record is a **decision** — worth more to the map than an open question ever was. This is the default in an interactive session, not an optional shortcut. File instead when they defer it, decline to settle it now, say it needs someone else, or when the answer must outlive the session as a standing constraint. Running unattended — a scheduled sync, a CI run, a background agent with nobody to ask — there is no one to put it to, so file.
+- **A new item** (`aporia:record_notes`) — when it owes a verdict and asking is not available or not enough: an open question someone must answer, a tension to adjudicate, a decision made, a bug/task to build. An item is a triage row a human must process; over-filing buries the verdicts the team actually owes. The tell that you have over-filed: you could have gotten the answer in the time it took to write the body.
 - **A comment** (`aporia:comment_item { ticket, body }`) — context on an **existing** item: progress while working it, evidence you gathered, a premise the code now contradicts, "while working ticket 8 I noticed…". A comment is non-triageable by construction — no ticket number, no status — it lands in the item's thread and exerts zero inbox pressure. Never mint a new item to mirror or annotate one that already exists.
+- **A correction** (`aporia:update_item { ticket, body }`) — when an **open** item's own text has gone **wrong**, not merely incomplete. The classic case: a decision whose core call still stands, but whose implementation line names a module, path or service the code no longer uses. Fix the text so the next reader gets the current truth, and leave a comment saying *why* it moved. `body` and `rationale` **overwrite** — restate everything still true, and write the correction in the item's own voice rather than bolting a changelog onto the end.
 - **The PR body** — ephemeral narration of a diff (what you changed, how you tested). It belongs with the code review, not in Aporia at all.
+
+**Comment or correct?** A comment adds; a correction replaces. If a reader following the item's body would now do the wrong thing, commenting is not enough — the wrong sentence stays there as the thing agents build from. Use both: correct the body, comment the reasoning.
+
+**Never supersede an item just to fix a line inside it.** A superseding decision closes the original, which is false when the rest of it still stands — and it silently removes the ticket an open PR was about to close on scan evidence. Supersede when the *verdict* changed; correct when only the *wording* did.
+
+Two refusals to expect: a **Rule** (`isConstraint`) can't be corrected in place — law changes by supersession — and a **closed** item can't either, because its body is the historical record its successor points back at.
 
 ## The kinds of note
 
@@ -49,7 +58,7 @@ Copy and track:
 Session notes progress:
 - [ ] Phase 0 — Resolve targets: aporia:search_graph / aporia:pull_context for the nodes this session touched
 - [ ] Phase 1 — Extract: decisions, open questions, deviations from this session's history
-- [ ] Phase 2 — Discipline gate: unstated why ⇒ question; tension links two targets; each traces to a moment
+- [ ] Phase 2 — Discipline gate: unstated why ⇒ question; tension links two targets; each traces to a moment; ask-first pass over the questions (a human present answers instead of being filed at)
 - [ ] Phase 3 — aporia:record_notes
 ```
 
@@ -69,6 +78,8 @@ Walk this session's history and pull out, each tied to a concrete moment:
 
 Before writing: is each note real and correctly typed? Unstated *why* ⇒ **question**, not a fabricated decision. A **tension** must link two targets (primary + secondary). Drop anything you can't tie to a moment in the session. Prefer attaching to the most central node a human would inspect.
 
+Then the ask-first pass, over the questions and tensions only: for each, *could the human in this session settle it right now?* Put those to them in one batch before you record anything — the answers turn into decisions, and what's left is the real filing list. A question filed at someone who is in the room is a routing error, not diligence.
+
 ### Phase 3 — Record
 
 Push with `aporia:record_notes`. A node target is referenced by its stable `key`; an edge/note target by the `id` from `aporia:pull_context`. ≤50 notes per call (≤8 targets each); page if more.
@@ -76,6 +87,8 @@ Push with `aporia:record_notes`. A node target is referenced by its stable `key`
 Every string is sized for the surface it renders on — read **[references/shared/content-style.md](references/shared/content-style.md)** (the proportionality table) before composing. The one hard bound: `title` is a ≤60-char plain-text headline, **rejected** (never truncated) past that — the substance goes in the markdown `body`.
 
 When a `decision` answers an open question, tension, idea, or supersedes a decision, pass `resolves` with that source note's `id` (from `aporia:pull_context` or the inbox) — the source closes and links to your decision, same as the UI action zone. Targets are inherited from the source on this path.
+
+**One verdict usually settles several items.** `resolves` also takes an **array** of ids (≤10) — use it when the same decision genuinely answers all of them, and they close together as one act. A decision minted per item is a closure receipt, not a verdict, and it buries the one statement a reader needed. If the items do not share a single answer, they are not one subject: write a decision each.
 
 ```jsonc
 // aporia:record_notes input
@@ -89,6 +102,8 @@ When a `decision` answers an open question, tension, idea, or supersedes a decis
     "title": "Issued invoices stay immutable — credit notes",
     "body": "Partial refunds spawn a separate **credit note**; issued invoices are never reopened.",
     "rationale": "Reopening breaks the audit trail a ledger exists to keep.",
+    // one id — or an array when the same verdict settles several:
+    //   "resolves": ["<question-note-id>", "<tension-note-id>"]
     "resolves": "<question-note-id>",
     "targets": [] },
   { "kind": "tension",
@@ -120,6 +135,8 @@ When the session produced a rendered document — a Markdown spec, a Claude Arti
 
 `noteId` comes from the `notes` refs `aporia:record_notes` just returned (or an existing note's id from `aporia:pull_context`); `nodeKey` is a map node's stable key from `aporia:search_graph` or `aporia:pull_context`. Pass **exactly one** of `noteId` or `nodeKey`. `fileType` is `markdown` | `html` | `pdf`; `content` rides inline — UTF-8 text, base64 for a pdf.
 
+**The door reads both ways.** What you attach is not write-only: `aporia:pull_item` and `aporia:pull_context` list every artifact as metadata (`attachmentId`, `filename`, `fileType`, `size`, `createdAt`), and `aporia:read_attachment { attachmentId }` hands back the content — UTF-8 text for markdown/html, paged with `offsetBytes` / `length` while `truncated` is true, or a whole PDF as base64. So before you attach a second spec to a note, read the one already there; and when you pick up a ticket whose body references a document, read the document rather than guessing at it.
+
 ## Recording a feature's process (observed behavior)
 
 When a session **implements or traces how a feature works** — the steps, who does what, the branches and triggers — capture it as a **Functional Process** (a sequence / swimlane bound to the feature) with `aporia:record_process`. This is the BEHAVIOR half of what a session produces, alongside the notes above. It is *observed behavior* — the same discipline as a note: don't draw a flow the code doesn't take.
@@ -134,7 +151,8 @@ The response reports the process `key` and whether it was `created`. The process
 
 ## Acceptance checklist
 
-- [ ] Routing honored: context on an existing item went to `aporia:comment_item`, diff narration stayed in the PR body — only verdict-owing findings became new items.
+- [ ] Routing honored: context on an existing item went to `aporia:comment_item`, an item whose own text had gone wrong was corrected with `aporia:update_item` (never superseded for it), diff narration stayed in the PR body — only verdict-owing findings became new items.
+- [ ] Ask-first honored: every question a human present could have settled was put to them, not filed at them — what they answered became a decision, and only what they deferred (or nobody was there to answer) was filed.
 
 - [ ] Every note traces to a real moment in this session.
 - [ ] No invented rationale — missing *why* is a `question`.

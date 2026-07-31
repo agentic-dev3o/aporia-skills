@@ -39,7 +39,7 @@ Scan progress:
 - [ ] Phase 1 — Scope: split the repo into the subsystems the team thinks in
 - [ ] Phase 2 — Inventory: raw facts per scope (high recall, no judgement)
 - [ ] Phase 3 — Distill: apply D1–D4 + D6 (plumbing filter, grain, language, evidence, legibility)
-- [ ] Phase 4 — Propose features; run the Realization Probe → structure as_built + deficiency flags / planned (D5)
+- [ ] Phase 4 — Propose features; run the Realization Probe → structure as_built + missing-side tasks / planned (D5)
 - [ ] Phase 5 — Elicit the why from the human (draft-first)
 - [ ] Phase 6 — aporia:apply_scan per scope (one sessionId + observed on every page; completeScope on the final page)
 - [ ] Phase 7 — aporia:record_notes: the elicited decisions, questions, tensions
@@ -78,15 +78,15 @@ Apply the five structural disciplines — D5 (intent) is Phase 4 (full text in t
 - **D2 Grain** — Entity = aggregate root; Component = meaningful module; Feature = slice of user value. **> ~30 nodes of one type in a scope ⇒ you're too fine; recluster.**
 - **D3 Domain language** — name things what the team *says* (UI strings → routes → API → comments → README → identifiers last). `tbl_inv_ln` → "Invoice Line".
 - **D6 Architecture legibility** — every component's `componentKind` follows the reference's decision table (`ui` = human screen · `trigger` = machine-invocable route/webhook/cron · `agent` = LLM loop with tools · `tool` = capability bundle an agent calls · `service`/`store`/`external`/`module`); every `depends_on` edge carries a ≤4-word verb `label` stating what crosses it ("mints Convex JWT", "gated: ENABLE_V4"); a component's `data.sub` is its evidence-backed signature line ("POST /api/chat", "ToolLoopAgent · 30 steps") — concrete numbers over adjectives, models never as nodes; an `external`'s `data.domain` names the vendor ("clerk.com"); lifecycle rides the group name ("NOA v3 (legacy)"); a risky external (unofficial API, deprecated SDK) gets a `tension` note.
-- **D4 Evidence, honest structure** — every node cites `externalRefs`; nothing ungrounded, never a claim you can't cite. A scanned entity/component/feature carries **no stored realization grade** — how completely a feature is built is not written into a field. You report the structure you can cite `as_built`, and hold a built-but-hollow feature at Partial with an **open `blocksImplementation` note** naming its missing side (Phase 4 carries the coverage rule). `confidence` lives only on **authored intent** — a `planned: true` feature you author-as-`hypothesis` (Phase 4); on scanned structure it is absent.
+- **D4 Evidence, honest structure** — every node cites `externalRefs`; nothing ungrounded, never a claim you can't cite. A scanned entity/component/feature carries **no stored realization grade**: **Built is binary and derived** — the feature is `as_built` AND carries at least one `externalRef` of kind `code`. You report the structure you can cite `as_built`, and name what a built-but-hollow feature is still missing with an **open `task`** on it (Phase 4 carries the rule). A cited document rides `kind: "doc"` and never counts as evidence. A node carries **no certainty field of any kind** — never stamp one; "how sure are we?" is read off the node's open discourse, so genuine doubt is an open **question** you file, not a grade you assert.
 
 ### Phase 4 — Propose features + run the Realization Probe (D5)
 
 Infer candidate `feature` nodes and their `realized_by` / `touches` bindings from routes/UI/folders. **Do not blanket-stamp them `planned`** — that buries the built features under the vapor, the exact failure this phase exists to prevent. The code shows how completely each feature is realized; read the whole slice.
 
-**The Realization Probe** answers *"does the product actually DO this, end to end?"* — read from code, **orthogonal to intent** (which stays empty until Phase 5), and it does **not** produce a grade you write into the node. Run it on each candidate feature exactly as **[references/shared/realization-probe.md](references/shared/realization-probe.md)** defines it — probe the five signals (surface · logic · persistence/IO · data realness · gating) and conclude in one of its **three actions**, never a stored grade. The half-baked / mocked / gated action is the one to watch: report the structure that exists `as_built` **and** record an open `blocksImplementation` note naming the missing side (Phase 7), which holds the feature at Partial.
+**The Realization Probe** answers *"does the product actually DO this, end to end?"* — read from code, **orthogonal to intent** (which stays empty until Phase 5), and it does **not** produce a grade you write into the node. Run it on each candidate feature exactly as **[references/shared/realization-probe.md](references/shared/realization-probe.md)** defines it — probe the five signals (surface · logic · persistence/IO · data realness · gating) and conclude in one of its **three actions**, never a stored grade. The half-baked / mocked / gated action is the one to watch: report the structure that exists `as_built` **and** file a `task` naming the missing side (Phase 7).
 
-**Implementation is derived server-side from binding coverage + open deficiency flags; nothing you write into a field can raise or hold it — only structure and flags can.** The level rolls up from what you can cite — the coverage table in **[realization-probe](references/shared/realization-probe.md)**, the same rule **aporia-sync** re-runs per PR.
+**Built is derived server-side and binary — `as_built` AND at least one `externalRef` of kind `code`, both of them yours to report; nothing you write into a field can raise it, and there is no middle rung.** The table is in **[realization-probe](references/shared/realization-probe.md)**, the same rule **aporia-sync** re-runs per PR.
 
 The probe reads from code; the **rationale/why** is Phase 5's — never fabricate it.
 
@@ -112,8 +112,8 @@ Push **per scope**, ≤200 nodes+edges per call (page large scopes; `completeSco
       // sub = evidence-backed signature line (optional); domain = vendor domain on external kinds
       "data": { "type": "component", "componentKind": "service", "sub": "invoices · 12 operations" } },
     { "key": "feature:billing.checkout", "type": "feature", "name": "Checkout",
-      // core wired on the default path (page ↔ submitCheckout ↔ Invoice): report that structure as_built + edges, no confidence field.
-      // Phase 7 flags its one hollow seam — a hard-coded tax — with blocksImplementation, holding it at Partial until real logic lands.
+      // core wired on the default path (page ↔ submitCheckout ↔ Invoice): report that structure as_built + edges, no certainty field.
+      // Phase 7 files a task for its one hollow seam — a hard-coded tax — naming what's still missing.
       // intent stays "" — you observe THAT it works; the WHY is elicited in Phase 5.
       "externalRefs": [{ "path": "src/billing/checkout-page.tsx" },
                        { "path": "src/billing/checkout.ts", "symbol": "submitCheckout" }],
@@ -129,15 +129,15 @@ Push **per scope**, ≤200 nodes+edges per call (page large scopes; `completeSco
 ```
 
 Key formats: `entity:<domain>.<name>` · `component:<name>` · `feature:<group>.<slug>`.
-Feature `data` keys are all **required** — the union won't validate without them (a missing key aborts the whole batch). `intent` is a required string: leave it `""` here and elicit it in Phase 5 (record the *why* as a decision note) — never drop the key. `successCriteria` is an array. `relatedPersonaIds` is an array of **persona ids from `aporia:pull_constitution`'s `personas[].id`** (never names or guesses) — `[]` if unknown; the link is confirmed during elicitation. Every node (features included) cites `externalRefs` — for a feature, the route/page/folder it was inferred from (D4). A scanned feature carries **no `confidence`** — omit the field; its Implementation is derived from coverage (its `as_built` bindings and any open `blocksImplementation` flag), and a built-but-hollow feature is held at Partial by that flag, not by a grade. `confidence` appears only when you author a `planned: true` feature (`'hypothesis'`).
+Feature `data` keys are all **required** — the union won't validate without them (a missing key aborts the whole batch). `intent` is a required string: leave it `""` here and elicit it in Phase 5 (record the *why* as a decision note) — never drop the key. `successCriteria` is an array. `relatedPersonaIds` is an array of **persona ids from `aporia:pull_constitution`'s `personas[].id`** (never names or guesses) — `[]` if unknown; the link is confirmed during elicitation. Every node (features included) cites `externalRefs` — for a feature, the route/page/folder it was inferred from (D4). A feature carries **no certainty field** — whether it is **Built** is derived from its own `state` + its own `externalRefs` of kind `code`, and a built-but-hollow feature is described by an open task naming the gap, not by a grade.
 A node's `name` and `summary` are map typography — a 1–4-word domain noun and a one-sentence summary; every authored field's shape is in [content-style](references/shared/content-style.md).
 Edge vocabulary: `relates_to` (entity↔entity, label carries cardinality) · `depends_on` (component↔component / feature↔feature — **label mandatory**: ≤4 words for what crosses it, conditions included, e.g. "gated: ENABLE_V4") · `owns` (component→entity) · `realized_by` (feature→component) · `touches` (feature→entity). The response reports `skippedEdges` (an endpoint key didn't resolve — push the scope that *defines* a node before one that only references it, or include both in the same batch) and, for `completeScope`, the `removed`/`removedEdges` **counts** (tombstoned because the scan no longer reports them). **A response carrying `mode: "preview"` wrote NOTHING**: the product declares a canonical ref and your `observed` is off it (a branch) or dirty — as-built truth is only written from the canonical ref on a clean tree. Never proceed as if that scan landed; onboard from the canonical ref, or hand the human the preview delta. A large run can also hit `RATE_LIMITED` — wait the returned `retryAfter`, then retry the same call.
 
 ### Phase 7 — Record the why with `aporia:record_notes`
 
-Capture the elicited reasoning **and** every deficiency the probe found, each note targeting the node(s) it's about by `key` — each a ≤60-char headline `title` over a markdown `body`, sized per [content-style](references/shared/content-style.md):
+Capture the elicited reasoning **and** every gap the probe found, each note targeting the node(s) it's about by `key` — each a ≤60-char headline `title` over a markdown `body`, sized per [content-style](references/shared/content-style.md):
 
-- a **`blocksImplementation` deficiency flag** (a `tension` note with `blocksImplementation: true`, targeting the feature) on every feature the Phase 4 probe found **half-baked / mocked** — naming the missing side / the mock / the `TODO`. This IS the Partial signal and the visible "what's left to build" beside the pill; without it a feature whose structure exists but is a mock reads *Implemented*. The flag lands **sync-watched**: the later sync scan that proves the missing side landed resolves it with that evidence, and coverage flips the feature up. (A feature that's Partial only because a binding is still `planned` needs no flag — the unbuilt binding already says so.)
+- a **`task`** (or a **`bug`**, when the gap contradicts a decision the team already made) on every feature the Phase 4 probe found **half-baked / mocked** — naming the missing side / the mock / the `TODO`. This is the visible "what's left to build"; unlike a flag it carries a title, an owner and closure evidence. A later scan that finds the missing side landed attests it, and a human confirms. (A feature whose binding is still `planned` needs no task — the unbuilt binding already says so.)
 - a **decision** for a stated *why* (with its rationale); a **question** for an unstated one; a **tension** when a correction contradicts the as-built.
 
 ```jsonc
@@ -148,9 +148,9 @@ Capture the elicited reasoning **and** every deficiency the probe found, each no
     "body": "Once issued, an invoice never changes. Corrections are made by issuing a separate **credit note**, never by editing the original.",
     "rationale": "Audit and tax records require an immutable issued document.", "isConstraint": true,
     "targets": [{ "refType": "node", "ref": "entity:billing.invoice", "role": "primary" }] },
-  { "kind": "tension", "blocksImplementation": true,
+  { "kind": "task",
     "title": "Checkout tax is hard-coded to 0",
-    "body": "`checkout.ts` returns a hard-coded `0` tax — no real engine is wired. Holds Checkout at Partial until the missing tax logic lands.",
+    "body": "`checkout.ts` returns a hard-coded `0` tax — no real engine is wired. Checkout ships, but the tax it charges is fiction until real logic lands.",
     "targets": [{ "refType": "node", "ref": "feature:billing.checkout", "role": "primary" }] },
   { "kind": "question",
     "title": "Which tax engine for Checkout?",
@@ -159,7 +159,7 @@ Capture the elicited reasoning **and** every deficiency the probe found, each no
 ] }
 ```
 
-Notes land `provisional`/`open` for the team to curate. Don't invent rationale — if the *why* wasn't stated, it's a **question**, not a decision. A `blocksImplementation` flag can only hold a feature BELOW Implemented, never raise it — it's the agent counterpart to the canvas's human *Flag as partial*.
+Notes land `provisional`/`open` for the team to curate. Don't invent rationale — if the *why* wasn't stated, it's a **question**, not a decision. (`blocksImplementation` is deprecated — the server accepts and ignores it. File the task instead.)
 
 ## Acceptance checklist (before declaring done)
 
@@ -169,11 +169,11 @@ Notes land `provisional`/`open` for the team to curate. Don't invent rationale �
 - [ ] Every node uses domain language (D3) and cites `externalRefs` (D4).
 - [ ] Every component's kind follows the D6 table; entries and externals identified per scope; every `depends_on` edge verb-labeled; `sub`/`domain` filled where evidence supports them (D6).
 - [ ] No `feature.intent` was invented — it's a human answer or left empty/open (D5).
-- [ ] The Realization Probe drove every feature to structure, not a grade: fully-wired features report all bindings `as_built`; every half-baked / mocked feature carries an **open `blocksImplementation` flag** citing its missing side (no mock left reading Implemented); nothing-on-either-side pushed `planned` at `hypothesis` (D4/D5).
+- [ ] The Realization Probe drove every feature to structure, not a grade: fully-wired features report their own `externalRefs` (kind `code`) plus all bindings `as_built`; every half-baked / mocked feature carries an **open task** citing its missing side; nothing-on-either-side pushed `planned` at `hypothesis` (D4/D5).
 - [ ] Every `aporia:apply_scan` returned `skippedEdges: 0` (or you understand each skip) — and every response **applied** (no `mode: "preview"`: a canonical-ref/dirty preview writes nothing).
 - [ ] Corrections were recorded as decisions/tensions, not silently applied.
 - [ ] Every authored string sized for its surface — node names 1–4 words, summaries one sentence, note titles ≤60-char headlines over markdown bodies ([content-style](references/shared/content-style.md)).
 
 ## Anti-patterns (reject)
 
-The raw import graph as edges · one node per file/function/table · entities named after DB tables · invented features with confident rationale · **a mocked feature pushed `as_built` with no `blocksImplementation` flag** (it will read Implemented) · **every feature pushed `planned` no matter how completely the code builds it** (burying built features under vapor) · "User Management", "Core", "Utils", "Settings" as features · a 200-node map "for completeness" · 40 questions instead of a draft to react to · **scanning onto an empty Constitution** (every feature left ungrounded) · **inventing the thesis or a persona from the code** instead of eliciting it from the human · an unlabeled `depends_on` between services · a model/LLM as a graph node (it rides `sub`) · an API route classified `service` instead of `trigger` (D6).
+The raw import graph as edges · one node per file/function/table · entities named after DB tables · invented features with confident rationale · **a mocked feature pushed `as_built` with no task naming its missing side** · **a document cited as `kind: "code"`** (it would fabricate Built) · **every feature pushed `planned` no matter how completely the code builds it** (burying built features under vapor) · "User Management", "Core", "Utils", "Settings" as features · a 200-node map "for completeness" · 40 questions instead of a draft to react to · **scanning onto an empty Constitution** (every feature left ungrounded) · **inventing the thesis or a persona from the code** instead of eliciting it from the human · an unlabeled `depends_on` between services · a model/LLM as a graph node (it rides `sub`) · an API route classified `service` instead of `trigger` (D6).

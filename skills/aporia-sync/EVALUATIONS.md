@@ -4,7 +4,7 @@ Per Anthropic's skill best practices: evaluations are the source of truth for wh
 skill works. These seven scenarios lock in the disciplines most likely to regress — the
 scope-boundary rules that decide when `completeScope` is safe, the same-session pagination
 spare, the canonical-worldline gate that keeps a branch scan a preview, the attestation
-half of the close (PR-linked when one exists), and the coverage-derived Implementation axis. There is no built-in
+half of the close (PR-linked when one exists), and the binary scan-owned Built axis. There is no built-in
 runner: execute each `query` against a fresh Claude instance with the skill loaded and the
 **Aporia MCP server connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -44,21 +44,21 @@ scopes.
   },
   {
     "skills": ["aporia-sync"],
-    "name": "S-3 — mock replaced by real logic: clear the stale blocksImplementation flag",
-    "setup": "feature:reports.export sits at Partial, held there by an OPEN agent-recorded blocksImplementation note (a sync-watched tension, closesBy: 'sync') citing a MOCK_ROWS fixture that stood in for real export logic. This PR replaces that fixture with real persistence on the default path — the mock is gone.",
+    "name": "S-3 — mock replaced by real logic: close the stale missing-side task",
+    "setup": "feature:reports.export carries an OPEN task citing a MOCK_ROWS fixture that stood in for real export logic. This PR replaces that fixture with real persistence on the default path — the mock is gone.",
     "query": "Sync the map — the reports export now hits the real store, no more fixture.",
     "expected_behavior": [
       "Re-walks the Realization Probe on feature:reports.export and confirms the mock is gone: real persistence, reached on the default path, not gated",
-      "Reports the now-real structure as_built AND resolves the stale blocksImplementation flag in Phase 6 — aporia:resolve_items on the flag's shortId, evidence citing the landed code (the flag is sync-watched) — so coverage can read the feature Implemented",
-      "NEGATIVE: a run that reports the real structure but LEAVES the blocksImplementation flag open FAILS — coverage still sees an open deficiency and the feature stays stuck at Partial after the mock is already gone",
-      "Does NOT try to raise the feature by writing a grade or a level into a field — it resolves the flag with evidence and lets coverage compute Implemented from the bindings + the now-cleared deficiency",
-      "Only resolves the flag against real code evidence — were the fixture still present, it would leave the flag open; and were the flag a HUMAN's canvas demote (closesBy manual), it would name it stale in the handoff instead of forcing it"
+      "Reports the now-real structure as_built AND resolves the stale task in Phase 6 — aporia:resolve_items on its shortId, evidence citing the landed code (the task is sync-watched)",
+      "NEGATIVE: a run that reports the real structure but LEAVES the task open FAILS — the map would still claim the export is a fixture after the mock is already gone",
+      "Does NOT try to raise the feature by writing a grade or a level into a field — Built is derived from the feature's own state + code refs, and the task is closed with evidence like any other work",
+      "Only resolves the task against real code evidence — were the fixture still present, it would leave it open; and were the task a teammate's to close, it would still cite the evidence — earning an attestation rather than silently dropping the proof"
     ]
   },
   {
     "skills": ["aporia-sync"],
     "name": "S-4 — evidence-gated closure: no scanned evidence, the item stays open",
-    "setup": "A sync-watched inbox item (closesBy: 'sync') rides on a node this sync touches, but the PR's diff does NOT contain the fix it asks for — the scanned code shows no change that proves the item.",
+    "setup": "An open inbox item rides on a node this sync touches, but the PR's diff does NOT contain the fix it asks for — the scanned code shows no change that proves the item.",
     "query": "Sync this PR and close out whatever tickets it fixes.",
     "expected_behavior": [
       "Phase 6 gathers the candidate (the sync-watched item on a re-scanned node) and judges it against the code actually scanned this run",
@@ -124,11 +124,12 @@ modes these scenarios exist to catch (each maps to the skill's anti-pattern list
   scoped wider than what was actually re-inventoried tombstones live nodes. The fix is
   always to re-scan the whole scope, drop `completeScope`, or `dryRun` to preview — never
   to force a guard refusal through.
-- **A mock left reading its true level wrong.** Reporting a mock `as_built` without a
-  `blocksImplementation` flag reads it *Implemented*; the inverse — leaving a now-stale
-  flag open after the mock is replaced (S-3) — sticks a real feature at *Partial*. Both
-  are the coverage axis lying. Implementation is derived from bindings + open deficiency
-  flags, never a grade written into a field.
+- **A mock left misdescribed.** Reporting a mock `as_built` without filing the task that
+  names the missing side leaves nothing on the map saying the data is fiction; the
+  inverse — leaving a now-stale task open after the mock is replaced (S-3) — leaves the
+  map claiming work that is already done. Both are the map lying. **Built** is derived
+  from the feature's own `state` + its `externalRefs` of kind `code`, never a grade
+  written into a field, and there is no *Partial* to hide the difference in.
 - **Closing an item without scanned evidence.** Optimistically resolving a sync-watched
   item the diff doesn't prove (S-4) is the "resolve with 'done'" anti-pattern; evidence
   must be a citable code fact from the scan you actually ran.

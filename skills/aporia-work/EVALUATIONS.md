@@ -30,7 +30,7 @@ describes the required graph + repo `setup` instead of bundling input files.
   {
     "skills": ["aporia-work"],
     "name": "W-2 — pre-merge close is a two-step: the branch sync ATTESTS, the trunk sync closes",
-    "setup": "The product declares canonicalRef: 'main'. ACME-9 is a sync-watched bug (closesBy: 'sync') whose node target carries externalRefs into the repo. The fix is implemented on branch apo-9-<slug> and the pre-merge sync (Phase 5, via the aporia-sync skill) runs on that branch.",
+    "setup": "The product declares canonicalRef: 'main'. ACME-9 is a bug whose node target carries externalRefs into the repo. The fix is implemented on branch apo-9-<slug> and the pre-merge sync (Phase 5, via the aporia-sync skill) runs on that branch.",
     "query": "Work ACME-9 end to end and close out the ticket.",
     "expected_behavior": [
       "Pulls the item by ticket, zooms its targets (pull_context / feature_gaps_spec), and branches apo-9-<slug> so the PR-time sync can match the ticket",
@@ -43,7 +43,7 @@ describes the required graph + repo `setup` instead of bundling input files.
   {
     "skills": ["aporia-work"],
     "name": "W-3 — directive decision as work order: honor the Rules, stay inside the ticket",
-    "setup": "ACME-6 is a directive DECISION (isConstraint: false, closesBy: 'sync') targeting feature:billing.checkout. The feature's context also carries an open Rule (a constraint decision: 'Invoices are immutable once issued'). Elsewhere in the repo sits an unrelated, un-ticketed bug the agent will notice while working.",
+    "setup": "ACME-6 is a directive DECISION (isConstraint: false) targeting feature:billing.checkout. The feature's context also carries an open Rule (a constraint decision: 'Invoices are immutable once issued'). Elsewhere in the repo sits an unrelated, un-ticketed bug the agent will notice while working.",
     "query": "Pick up ticket 6 from the inbox.",
     "expected_behavior": [
       "aporia:pull_item returns the work order (a directive is workable); targets are zoomed with pull_context, and the feature target is compiled with aporia:feature_gaps_spec",
