@@ -38,7 +38,7 @@ Every extraction is one of two things; conflating them is the root of slop:
 
 Your entire value is the interpretation — clustering, naming, dropping, inferring. Serializing the AST produces slop by construction. **Judge.**
 
-**Confidence lives on AUTHORED intent only.** A scanned node — observation or interpretation — carries **no stored confidence**; how sure you are of a *name* or a *cluster* is expressed through the evidence you cite, a note when it's genuinely ambiguous, or choosing to author it as `planned` (intent, not asserted structure) — never a grade stamped on scanned structure. The one place `confidence` is stored is an authored `planned: true` feature (`hypothesis`). And whether a feature is *built* is not confidence at all: it is **Built, derived server-side and binary — `as_built` AND at least one `externalRef` of kind `code`** (D4) — nothing you write into a field can raise it.
+**Confidence lives on AUTHORED intent only.** A scanned node — observation or interpretation — carries **no stored confidence**; how sure you are of a *name* or a *cluster* is expressed through the evidence you cite, a note when it's genuinely ambiguous, or choosing to author it as `planned` (intent, not asserted structure) — never a grade stamped on scanned structure. There is no longer anywhere a node's `confidence` is stored: `apply_scan` accepts the field and ignores it, so an unsettled node carries an open question instead of a grade. And whether a feature is *built* is not confidence at all: it is **Built, derived server-side and binary — `as_built` AND at least one `externalRef` of kind `code`** (D4) — nothing you write into a field can raise it.
 
 > **The hard line: report structure with evidence; never fabricate intent — elicit it.** The *why*, the success criterion, the persona served are not in the code. Where they aren't observable, you **ask** (Phase 5); you do not invent.
 
@@ -89,7 +89,7 @@ Each stage gates the next:
 4. **Elicit** *(§5)* — hand the draft to the human.
 5. **Commit** — push per scope via `apply_scan` (scopeKey + completeScope), reconciled by stable `key`. Re-scans run the same pipeline; identity is the `key`, so refactors and file moves never orphan bound intent.
 
-**Planned features** — a `feature` the product *means* to have but the code does not implement yet (UI scaffolding with no backing logic, an empty route, a "coming soon" surface, a feature the human says to register "to be defined") is **intent, not structure**. This is the probe's third action: no implementation on *either* side. Push it through `apply_scan` with `planned: true` at `confidence: 'hypothesis'`: it lands `intended` (not `as_built`) and is exempt from the completeScope sweep, so it survives until a real scan finds it in code and realizes it. (A feature wired on one side only is still reported `as_built` — the code *is* there, just half-baked — with a `task` naming the missing side, not `planned`.) Never report an unbuilt surface as `as_built` — that asserts the product ships something it doesn't.
+**Planned features** — a `feature` the product *means* to have but the code does not implement yet (UI scaffolding with no backing logic, an empty route, a "coming soon" surface, a feature the human says to register "to be defined") is **intent, not structure**. This is the probe's third action: no implementation on *either* side. Push it through `apply_scan` with `planned: true`: it lands `intended` (not `as_built`) and is exempt from the completeScope sweep, so it survives until a real scan finds it in code and realizes it. (A feature wired on one side only is still reported `as_built` — the code *is* there, just half-baked — with a `task` naming the missing side, not `planned`.) Never report an unbuilt surface as `as_built` — that asserts the product ships something it doesn't.
 
 ---
 
@@ -112,7 +112,7 @@ You may read the repo's own README/PRDs/`docs/` to enrich proposals before askin
 |---|---|---|
 | Produces | `as_built` **structure** | `intended` **intent** |
 | Method | observe, then interpret with evidence | draft, then elicit and confirm |
-| Realization / confidence | **Built** derived from the node's own `state` + its `externalRefs` of kind `code` — **no stored grade**, no middle rung | `confidence` rides only authored intent (a `planned` feature ⇒ `hypothesis`) |
+| Realization / confidence | **Built** derived from the node's own `state` + its `externalRefs` of kind `code` — **no stored grade**, no middle rung | a node stores no `confidence` at all; `apply_scan` ignores the field, and doubt is an open question |
 | Never does | fabricate intent | invent structure the code doesn't have |
 
 Structure flows from the code; intent flows from the team. The map's honesty is that the two are kept distinct and bound by `key`, not smeared together.

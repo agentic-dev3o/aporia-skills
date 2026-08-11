@@ -21,12 +21,28 @@ This is the contract for *how* text is shaped; the skill that sent you here says
 | persona `situation` | the dossier portrait | 2–5-sentence JTBD narrative, light emphasis, no headings |
 | principle `statement` | a law in a list | one testable sentence, plain |
 | principle `rationale` | under the law | 1–2 markdown sentences tying it to the bet |
-| thesis `product` | the product header | 1–2 sentences |
-| thesis `problem.statement` / `insight` | constitution panels | one short markdown paragraph each |
+| thesis `product` / `problem.statement` | the footer band | 1–2 plain sentences, ≤200 chars each |
+| thesis `shift` / `whyNow` / `endState` | a numbered card | ONE claim, plain prose, ≤200 chars (~30 words) |
+| thesis `bet` | the highlighted card | the falsifiable claim, ≤240 chars (~35 words) |
+| thesis `falsifiedIf` | the falsifier strip | what would prove the bet wrong, ≤140 chars (~20 words) |
 | process `name` | the swimlane title | 2–4 words naming the flow |
 | process lane label | a swimlane header | 1–3 words |
 | process step label | a box on the canvas | 2–5 words, verb-first |
 | flow `label` / `branch` | an edge tag | 1–3 words / a one-word guard |
+
+## Punctuation and syntax
+
+These bind every string you write into the map, and the MCP server states them too. A clause held inside dashes reads as an aside the writer could not place. Make it its own sentence and it becomes a claim the team can agree or disagree with, which is the whole job here.
+
+1. Avoid em-dashes entirely. Use a period, a comma, or parentheses instead.
+2. Avoid overusing semicolons or colons to connect independent clauses.
+3. Keep sentences simple and direct. Vary sentence lengths naturally.
+4. If a sentence contains more than one parenthetical thought, split it into two separate sentences.
+
+Bad: `"code-connection—not visual modeling alone—is the thesis's non-obvious centre."`
+Good: `"code-connection is the thesis's non-obvious centre. Visual modeling alone is not enough."`
+
+The rule applies to the examples in this file and in every skill, not just to your own prose. A template you copy is a style you inherit.
 
 ## The title — a headline, not a sentence
 
@@ -34,7 +50,7 @@ The `title` names the claim the way a commit subject names a change; the body IS
 
 - **≤60 characters, enforced by rejection** — an over-length title fails the whole write (never truncated). If it doesn't fit, you're writing a sentence: cut to the noun phrase and move the substance into the body.
 - **Plain text** — no markdown, no trailing period, no "Decision:" prefix.
-- **Match the kind** — a question titles as a question ("Partial refunds: reopen or credit note?"); a decision as the choice made ("Invoices are immutable once issued"); a tension names the conflict ("Money math: UI vs Billing service").
+- **Match the kind** — a question titles as a question ("Partial refunds: reopen or credit note?"); a decision as the choice made, one that finishes when the code lands ("Refunds spawn a credit note, never a reopen"); a rule as the law it states, still binding in two years ("Invoices are immutable once issued"); a tension names the conflict ("Money math: UI vs Billing service").
 - **Timeless** — no status narration ("SHIPPED", "WIP"), no PR numbers or branch names. Git holds history; the map holds meaning.
 
 ## The body — markdown at reading distance
@@ -69,7 +85,7 @@ body:   the same sentence again, then five more flat lines
 ```jsonc
 { "kind": "decision",
   "title": "One inline DescriptionEditor for all rich text",
-  "body": "Every rich-text surface shares the inline **DescriptionEditor** (markdown-string API) — the rendered content IS the editing surface, no edit mode.\n\n## Wired across\n- Inbox note detail\n- Node page — feature intent\n- Personas dossier — situation",
+  "body": "Every rich-text surface shares the inline **DescriptionEditor** (markdown-string API). The rendered content IS the editing surface, no edit mode.\n\n## Wired across\n- Inbox note detail\n- Node page (feature intent)\n- Personas dossier (situation)",
   "rationale": "One editor keeps humans and agents on a single markdown body and drops into the existing string-based autosave." }
 ```
 

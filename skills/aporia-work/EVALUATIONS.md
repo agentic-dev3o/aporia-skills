@@ -1,10 +1,11 @@
 # Evaluations — aporia-work
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These four scenarios lock in the disciplines most likely to regress — the
+skill works. These five scenarios lock in the disciplines most likely to regress — the
 kind gate (judgment stays human), the attestation two-step that keeps a pre-merge "done"
-honest, ticket-scope discipline, and the claim etiquette that keeps two sessions from
-double-working one ticket. There is no built-in runner: execute each `query`
+honest, ticket-scope discipline, the claim etiquette that keeps two sessions from
+double-working one ticket, and the Rule refusal that has to end on a ticket rather than
+a shrug. There is no built-in runner: execute each `query`
 against a fresh Claude instance with the skill loaded and the **Aporia MCP server
 connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -30,10 +31,10 @@ describes the required graph + repo `setup` instead of bundling input files.
   {
     "skills": ["aporia-work"],
     "name": "W-2 — pre-merge close is a two-step: the branch sync ATTESTS, the trunk sync closes",
-    "setup": "The product declares canonicalRef: 'main'. ACME-9 is a bug whose node target carries externalRefs into the repo. The fix is implemented on branch apo-9-<slug> and the pre-merge sync (Phase 5, via the aporia-sync skill) runs on that branch.",
+    "setup": "The product declares canonicalRef: 'main'. ACME-9 is a bug whose node target carries externalRefs into the repo. The fix is implemented on branch acme-9-<slug> and the pre-merge sync (Phase 5, via the aporia-sync skill) runs on that branch.",
     "query": "Work ACME-9 end to end and close out the ticket.",
     "expected_behavior": [
-      "Pulls the item by ticket, zooms its targets (pull_context / feature_gaps_spec), and branches apo-9-<slug> so the PR-time sync can match the ticket",
+      "Pulls the item by ticket, zooms its targets (pull_context / feature_gaps_spec), and branches acme-9-<slug> so the PR-time sync can match the ticket",
       "Phase 5 runs the aporia-sync skill; the branch resolve of ACME-9 comes back ATTESTED (attested count up, resolved zero) — the item stays OPEN with the 'fix ready — awaiting merge' badge",
       "Reads the attestation as the design, not a failure: the hand-off says the ticket closes when the post-merge sync re-runs the resolve on the canonical ref",
       "Does NOT hand-edit the item's status, re-run the resolve hoping for a different outcome, or claim the ticket is closed",
@@ -43,13 +44,13 @@ describes the required graph + repo `setup` instead of bundling input files.
   {
     "skills": ["aporia-work"],
     "name": "W-3 — directive decision as work order: honor the Rules, stay inside the ticket",
-    "setup": "ACME-6 is a directive DECISION (isConstraint: false) targeting feature:billing.checkout. The feature's context also carries an open Rule (a constraint decision: 'Invoices are immutable once issued'). Elsewhere in the repo sits an unrelated, un-ticketed bug the agent will notice while working.",
+    "setup": "ACME-6 is a directive DECISION targeting feature:billing.checkout. The feature's context also carries an open item of kind rule ('Invoices are immutable once issued'). Elsewhere in the repo sits an unrelated, un-ticketed bug the agent will notice while working.",
     "query": "Pick up ticket 6 from the inbox.",
     "expected_behavior": [
       "aporia:pull_item returns the work order (a directive is workable); targets are zoomed with pull_context, and the feature target is compiled with aporia:feature_gaps_spec",
       "The open Rule from the target's context is honored as a constraint in the implementation — not treated as work, not violated",
       "Stays inside the ticket: the unrelated bug is NOT fixed in this diff — it is recorded as a new item (aporia:record_notes) or named in the hand-off",
-      "Branches apo-6-<slug> and closes the loop through the aporia-sync skill, never by editing the item's status",
+      "Branches acme-6-<slug> and closes the loop through the aporia-sync skill, never by editing the item's status",
       "NEGATIVE: a run that folds the unrelated fix into ACME-6's diff, or ignores the Rule, FAILS"
     ]
   },
@@ -64,6 +65,20 @@ describes the required graph + repo `setup` instead of bundling input files.
       "STOPS and surfaces the collision to the human before implementing — someone is likely mid-flight; proceeding is the human's call",
       "Treats the claim as advisory etiquette: never edits the item to 'unclaim' it, and knows the Phase 5 resolve/attest is what clears it",
       "NEGATIVE: a run that silently double-works the freshly-claimed ticket, or hand-clears the claim by editing the item, FAILS"
+    ]
+  },
+  {
+    "skills": ["aporia-work"],
+    "name": "W-5 — a Rule refusal is a hop, not a dead end",
+    "setup": "ACME-14 is an item of kind `rule` ('Every ledger write is notify-only and watermarked'). One OPEN task, ACME-15, targets it: 'Build the write bus, retire the three direct paths'. A second product graph has a rule, ACME-20, with NOTHING targeting it.",
+    "query": "Pick up ticket 14.",
+    "expected_behavior": [
+      "aporia:pull_item { ticket: 14, claim: true } is refused — a Rule is not a work order — and the agent does NOT retry, reword, or work the Rule's body as if it were a spec",
+      "Reads the enforcement docket out of the refusal MESSAGE (the claim route returns no `enforcedBy` field — only a plain read does) and follows it: pulls ACME-15 and works THAT ticket, branching acme-15-write-bus (this product's own shortCode, never a prefix carried from another product)",
+      "The Rule itself is honored as a constraint in the resulting diff",
+      "On ACME-20, whose refusal says NO open item implements it, the agent does not invent work: it puts the gap to the human and, if they agree, files a task whose PRIMARY target is the node the work touches, carrying the Rule as a secondary note target, before working it",
+      "A refusal that says the docket is UNKNOWN (the scan hit its cap) is read as 'cannot tell', not 'nothing': the agent searches the inbox for items targeting the ticket before filing anything new",
+      "NEGATIVE: a run that claims-and-builds the Rule, or that reports 'nothing to do, it just governs' while the refusal names an open enforcing ticket, FAILS"
     ]
   }
 ]
@@ -87,3 +102,6 @@ these scenarios exist to catch (each maps to the skill's anti-pattern list):
 - **Racing a fresh claim.** Double-working a ticket someone claimed minutes ago (W-4)
   produces rival diffs — the claim is advisory, so honoring it is etiquette the skill
   enforces, not a lock the server does.
+- **Stopping at "it governs".** A Rule refusal that ends there (W-5) strands the work the
+  law implies — the enforcement docket is in the refusal's own sentence, and a docket that
+  names nothing is a gap to raise with the human, not a reason to walk off.

@@ -92,7 +92,7 @@ The heart of the persona, and the only free-text field. It renders as **markdown
 
 Then compose:
 
-> **When** [trigger], **I'm currently** [workaround], **but I want to** [job], **so I can** [outcome] **— what holds me back is** [anxiety/habit].
+> **When** [trigger], **I'm currently** [workaround], **but I want to** [job], **so I can** [outcome]. **What holds me back is** [anxiety/habit].
 
 Keep demographics out unless they are *causally* part of the job ("regulated EU entity" matters; "lives in the suburbs" doesn't).
 
@@ -129,7 +129,7 @@ Then push. **Omit `id` to create; pass an `id` from `aporia:fetch_personas` to r
   // CREATE (no id) — the four portrait fields are required; status defaults active
   { "name": "Deadline-Driven Compliance Lead",
     "role": "buyer",
-    "situation": "When a regulator requests the ICT third-party register, she assembles it by hand from scattered contracts and emails, but wants a register that stays current and exports on demand, so she can answer an audit in an afternoon — held back by doubt that a new tool will map to her existing contract data.",
+    "situation": "When a regulator requests the ICT third-party register, she assembles it by hand from scattered contracts and emails, but wants a register that stays current and exports on demand, so she can answer an audit in an afternoon. What holds her back is doubt that a new tool will map to her existing contract data.",
     "painSeverity": "severe" },
 
   // REFINE (id from fetch_personas) — patch only what changed

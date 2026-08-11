@@ -1,10 +1,11 @@
 # Evaluations — aporia-session-notes
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These three scenarios lock in the disciplines most likely to regress — the
+skill works. These four scenarios lock in the disciplines most likely to regress — the
 fabrication gate (an unstated *why* is a question, never a decision), the two-target
-tension with the `skippedTargets` re-push, and the observed-process discipline with its
-replace guard. There is no built-in runner: execute each `query` against a fresh Claude
+tension with the `skippedTargets` re-push, the observed-process discipline with its
+replace guard, and the split test that keeps standing law out of the same item as the
+work it implies. There is no built-in runner: execute each `query` against a fresh Claude
 instance with the skill loaded and the **Aporia MCP server connected to a seeded test
 product**, then score the transcript against `expected_behavior`.
 
@@ -51,6 +52,20 @@ describes the required graph + session `setup` instead of bundling input files.
       "If the human declines, the divergence between the drawn process and the code's flow is recorded as a TENSION instead — the observation is not lost",
       "NEGATIVE: a run that silently overwrites the human's process, or draws a step the code doesn't take, FAILS"
     ]
+  },
+  {
+    "skills": ["aporia-session-notes"],
+    "name": "N-4 — the split test: law and the chantier it implies are two items, minted as one act",
+    "setup": "A session settled one thing that bundles both halves: ledger writes become notify-only, every row carries a watermark, bounds enforced server AND client side (standing law) — AND the bus has to be built and three existing direct-write paths deleted (a one-off chantier that finishes when the code lands). The map has component:billing.ledger.",
+    "query": "Record this session's decisions in Aporia.",
+    "expected_behavior": [
+      "Applies the split test and files TWO items, not one: a `rule` for the standing half and a `task` for the chantier",
+      "Both are minted in ONE aporia:record_notes call, with the Rule FIRST (a `#n` ref points backward only), and the task carrying TWO targets: component:billing.ledger as `primary` plus a `secondary` note target of `#0` (the Rule's index in the same notes array) — not two calls, and never a prose cross-reference like 'see the rule above'",
+      "The Rule's body carries only what still binds in two years; the delete-the-three-paths work is in the task, not smuggled into the law",
+      "NEGATIVE: a run that files the whole thing as ONE rule FAILS — the chantier becomes unclaimable, and a later session pulling that ticket is refused with no work order to pick up",
+      "NEGATIVE: a task whose ONLY target is `#0` FAILS — the Rule becomes its primary target, so the ticket lands on no node page and in no docket",
+      "NEGATIVE: a run that files the whole thing as one decision, losing the standing half, also FAILS"
+    ]
   }
 ]
 ```
@@ -69,3 +84,9 @@ these scenarios exist to catch:
   destroys editor work; the CONFLICT is a guard, not an obstacle.
 - **Observed vs designed drift.** Drawing flows the code doesn't take belongs to the
   DESIGN door (aporia-design-process) — this skill records only what runs.
+- **Law bundled with its chantier.** A single item carrying both a standing line and the
+  work it implies (N-4) files the work under a kind nobody can claim. The cost lands two
+  sessions later, at a refusal the next agent has to diagnose.
+- **The placeless task.** Splitting the pair correctly and then hanging the task off the
+  Rule *alone* (N-4) trades one invisibility for another: the note becomes the task's
+  primary target, and a note is not a place on the map. The node target stays primary.

@@ -39,11 +39,22 @@ Not everything a session produces deserves a **new item**. Route by two question
 
 **Never supersede an item just to fix a line inside it.** A superseding decision closes the original, which is false when the rest of it still stands — and it silently removes the ticket an open PR was about to close on scan evidence. Supersede when the *verdict* changed; correct when only the *wording* did.
 
-Two refusals to expect: a **Rule** (`isConstraint`) can't be corrected in place — law changes by supersession — and a **closed** item can't either, because its body is the historical record its successor points back at.
+Two refusals to expect: a **Rule** (`kind: "rule"`) can't be corrected in place — law changes by supersession — and a **closed** item can't either, because its body is the historical record its successor points back at.
+
+### Correcting the map itself — a node's name
+
+The doors above correct an **item**. When the thing that is wrong is a **node's name on the map** — a label that no longer matches what the code is, or one the human just asked you to change — rename it with `aporia:update_node { key, name }`. It is the only rename door: `aporia:apply_scan` reports as-built **structure**, never names, so a scan that reports a different name for a renamed node changes nothing.
+
+- The stable `key` is **identity** and is never touched by a rename, so nothing re-links and no binding breaks. Only the display name moves.
+- **Prose only**, the same authority split `aporia:update_item` holds for an item: a rename can't change a node's type, group, state or origin. A node's summary, description and a feature's intent are **not** editable here — that is authored meaning a human owns; propose a change to it with `aporia:record_notes` instead.
+- The edit is **stamped**, so the team sees an agent touched the label.
+
+**The discipline.** Rename what is *wrong*, or what the human in the session asked you to fix — never to impose your own preferred vocabulary on a map the team curates. The map's names are how a founder recognizes their own product; a rename nobody asked for is drift wearing a helpful face. When you believe a name is wrong and there is a human present, propose it and let them say yes.
 
 ## The kinds of note
 
-- **decision** — a resolved choice **+ its rationale**. The choice AND why. (`isConstraint: true` when it's a rule the code must keep obeying.)
+- **decision** — a resolved choice **+ its rationale**. The choice AND why.
+- **rule** — **standing law**: a line the code must keep obeying, which governs until it is superseded or retired. This is the kind that changes what the item *can be*, so pick it deliberately (see the split test below).
 - **question** — an unknown the work surfaced and left open **that gates further work** — someone owes an answer. Use this whenever the *why* is missing — do not upgrade it to a decision.
 - **tension** — a conflict between two things. The signature case for a coding session: the code took a **different path than the intended plan**, or the plan was underspecified and you had to choose. A tension **links two targets** (e.g. the feature/decision you were given and the node where the code diverged).
 - **idea** — a proposal with **no verdict owed**: "I noticed we could…". Non-binding and non-gating — it never blocks a spec and is never projected back into agent context. Target the feature it concerns. The line vs question: file a question when work can't proceed without an answer; an idea sitting open for a year is not debt.
@@ -78,6 +89,18 @@ Walk this session's history and pull out, each tied to a concrete moment:
 
 Before writing: is each note real and correctly typed? Unstated *why* ⇒ **question**, not a fabricated decision. A **tension** must link two targets (primary + secondary). Drop anything you can't tie to a moment in the session. Prefer attaching to the most central node a human would inspect.
 
+**The split test — law vs work.** Run it over every decision before you file it: *does this sentence still bind in two years, or does it finish when the code lands?*
+
+- Still binds ⇒ **rule**. It governs; nobody can claim it, edit it, or scan-close it.
+- Finishes ⇒ **decision** (a directive someone builds) or a **task**.
+- **Both** ⇒ it is **two items**, not one. This is the case that goes wrong: a single note that says *"every write is notify-only and carries a watermark"* (law) *and* *"build the bus, delete the three old mechanisms"* (a one-off chantier) gets filed as a Rule, and the chantier becomes unclaimable — a later session pulls the ticket, is refused, and has to diagnose it and hand-mint the work itself.
+
+File the pair in **one** `aporia:record_notes` call: the Rule first, then the task, and give the task **two** targets — its own node target as `primary`, plus `{ "refType": "note", "ref": "#0", "role": "secondary" }`, where `#0` is the index of the Rule in this same `notes` array. That note link is the whole association: `aporia:pull_item` on the Rule lists the open items targeting it, so the next agent's refusal names the ticket to pull instead of dead-ending on *"honor it"*.
+
+**The node target stays primary.** A task whose *only* target is the Rule takes the Rule as its primary target, and a note is not a place: the ticket then shows on no node page, in no docket, and compiles no feature — the work the split test exists to make findable ends up findable only by scrolling the Inbox.
+
+**Backward refs only.** A `#n` must name an **earlier** note of the same call that actually recorded (a note whose targets all failed to resolve mints nothing, so nothing points at it). A forward ref, a self-ref, or a ref to a note that didn't land is refused with `BAD_REQUEST` and **the whole batch rolls back** — nothing at all is recorded, not just the bad target. Order the array law first, work second.
+
 Then the ask-first pass, over the questions and tensions only: for each, *could the human in this session settle it right now?* Put those to them in one batch before you record anything — the answers turn into decisions, and what's left is the real filing list. A question filed at someone who is in the room is a routing error, not diligence.
 
 ### Phase 3 — Record
@@ -86,7 +109,9 @@ Push with `aporia:record_notes`. A node target is referenced by its stable `key`
 
 Every string is sized for the surface it renders on — read **[references/shared/content-style.md](references/shared/content-style.md)** (the proportionality table) before composing. The one hard bound: `title` is a ≤60-char plain-text headline, **rejected** (never truncated) past that — the substance goes in the markdown `body`.
 
-When a `decision` answers an open question, tension, idea, or supersedes a decision, pass `resolves` with that source note's `id` (from `aporia:pull_context` or the inbox) — the source closes and links to your decision, same as the UI action zone. Targets are inherited from the source on this path.
+When a `decision` — or a `rule`, when the verdict is standing law — answers an open question, tension, idea, or supersedes a decision or rule, pass `resolves` with that source note's `id` (from `aporia:pull_context` or the inbox) — the source closes and links to your verdict, same as the UI action zone. Targets are inherited from the source on this path.
+
+**Superseding a Rule takes `kind: "rule"`.** Law is replaced by law, and a `decision` naming a Rule in `resolves` is refused: filing the successor as a directive would turn standing law into build debt — claimable, scan-closable, listed as work. If the law genuinely no longer applies, that demotion is the human's call from the item's action zone, not yours.
 
 **One verdict usually settles several items.** `resolves` also takes an **array** of ids (≤10) — use it when the same decision genuinely answers all of them, and they close together as one act. A decision minted per item is a closure receipt, not a verdict, and it buries the one statement a reader needed. If the items do not share a single answer, they are not one subject: write a decision each.
 
@@ -98,8 +123,10 @@ When a `decision` answers an open question, tension, idea, or supersedes a decis
     "body": "Checkout charges through the Stripe **PaymentIntents** API, not the legacy Charges API.\n\nPaymentIntents is the only path that carries SCA/3DS, which EU cards require.",
     "rationale": "3DS/SCA is mandatory for EU customers; the Charges API can't satisfy it.",
     "targets": [{ "refType": "node", "ref": "feature:billing.checkout", "role": "primary" }] },
-  { "kind": "decision",
-    "title": "Issued invoices stay immutable — credit notes",
+  // the split test says "still binds in two years" — so this one is a rule, not a
+  // decision, and a rule resolves the question it settles exactly as a decision does
+  { "kind": "rule",
+    "title": "Issued invoices stay immutable, credit notes reverse",
     "body": "Partial refunds spawn a separate **credit note**; issued invoices are never reopened.",
     "rationale": "Reopening breaks the audit trail a ledger exists to keep.",
     // one id — or an array when the same verdict settles several:
@@ -117,6 +144,26 @@ When a `decision` answers an open question, tension, idea, or supersedes a decis
     "title": "Partial refunds: reopen or credit note?",
     "body": "Should a partial refund **reopen the Invoice**, or spawn a separate *credit note*?\n\nDecides whether an issued invoice stays immutable.",
     "targets": [{ "refType": "node", "ref": "entity:billing.invoice", "role": "primary" }] }
+] }
+```
+
+**Law and the work it implies, minted as one act.** The Rule is index `0` of this array, so the task points at it with `"#0"`:
+
+```jsonc
+// aporia:record_notes input — the split test came back "both"
+{ "notes": [
+  { "kind": "rule",
+    "title": "Every ledger write is notify-only and watermarked",
+    "body": "No surface writes the ledger directly. Writes go through the bus, notify-only, and every row carries a watermark — server side and client side both.",
+    "rationale": "Two surfaces already disagreed about a total; the watermark is what makes a replay detectable.",
+    "targets": [{ "refType": "node", "ref": "component:billing.ledger", "role": "primary" }] },
+  { "kind": "task",
+    "title": "Build the write bus, retire the three direct paths",
+    "body": "Stand up the bus, move the three existing direct-write paths onto it, then delete them.",
+    "targets": [
+      { "refType": "node", "ref": "component:billing.ledger", "role": "primary" },
+      { "refType": "note", "ref": "#0",                        "role": "secondary" }
+    ] }
 ] }
 ```
 
@@ -152,6 +199,7 @@ The response reports the process `key` and whether it was `created`. The process
 ## Acceptance checklist
 
 - [ ] Routing honored: context on an existing item went to `aporia:comment_item`, an item whose own text had gone wrong was corrected with `aporia:update_item` (never superseded for it), diff narration stayed in the PR body — only verdict-owing findings became new items.
+- [ ] Any node rename went through `aporia:update_node` (never a scan), was wrong-or-asked-for rather than a preference, and left the stable `key` alone.
 - [ ] Ask-first honored: every question a human present could have settled was put to them, not filed at them — what they answered became a decision, and only what they deferred (or nobody was there to answer) was filed.
 
 - [ ] Every note traces to a real moment in this session.

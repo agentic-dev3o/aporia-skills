@@ -49,6 +49,7 @@ Work progress:
 - **targets** — the map spots it's about: node targets carry the stable `key` and `externalRefs` (the files to read first); a bug's note target carries the **decision it traces to** (the intent the code contradicts — your fix closes THAT gap, nothing more);
 - **guidance** — branch convention and the next tool to call;
 - **attachments** — the artifacts hanging off this ticket, as METADATA (`attachmentId`, `filename`, `fileType`, `size`, `createdAt`). A ticket whose real spec is an attached file says so here — read it with `aporia:read_attachment { attachmentId }` before you plan, or you will build from a body that only references it;
+- **enforcedBy** / **enforcedByTruncated** — on a plain READ of a **rule** (claim omitted): the open items TARGETING that Rule — the work implementing the law — and whether that list is incomplete. The claim route carries neither field: a Rule refuses the claim, and the same docket arrives NAMED IN THE REFUSAL MESSAGE, which is what turns the refusal from a dead end into a hop (see the table below);
 - **previousClaimedAt** — the prior claim's timestamp (`null` if none; the claim route only — a plain read always reports `null`).
 
 **Reading an attachment.** `aporia:read_attachment` takes the `attachmentId` from a listing — never a URL, never an id you assembled. Markdown/HTML come back as UTF-8 text, paged: when `truncated` is true, call again with `offsetBytes` set to the returned `nextOffset` (and an optional `length` to take smaller bites) until it is false. A PDF comes back whole as base64, or is refused if it is over the read ceiling — that one the human opens in the app.
@@ -61,7 +62,7 @@ Work progress:
 |---|---|
 | idea | Tell the human it needs adoption; if they adopt, a Decision is registered and that becomes the work |
 | question / tension | Adjudicate WITH the human — present the sides, they decide; register the Decision, then pull the follow-up |
-| Rule | Not work — honor it in whatever you build |
+| rule | Standing law, never work — but the refusal MESSAGE names its **enforcement docket**: pull one of the tickets it names and work THAT. Says *no open item implements it*? Then the law implies work nobody filed — put it to the human and file it as a task on the node the work touches (`primary`) carrying the Rule as a **secondary** note target. Says the docket is *UNKNOWN* (the scan hit its cap)? File nothing yet — search the inbox for items targeting this ticket first, or you duplicate work already on the board. Either way, honor the Rule in whatever you build |
 | already closed | Nothing to do; if the user disagrees with the closure, that's a reopen conversation, not a build |
 
 ### Phase 2 — Zoom
