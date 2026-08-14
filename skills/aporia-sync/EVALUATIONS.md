@@ -1,10 +1,11 @@
 # Evaluations — aporia-sync
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These seven scenarios lock in the disciplines most likely to regress — the
+skill works. These eight scenarios lock in the disciplines most likely to regress — the
 scope-boundary rules that decide when `completeScope` is safe, the same-session pagination
 spare, the canonical-worldline gate that keeps a branch scan a preview, the attestation
-half of the close (PR-linked when one exists), and the binary scan-owned Built axis. There is no built-in
+half of the close (PR-linked when one exists), the binary scan-owned Built axis, and the
+wholesale replace that makes a re-reported entity's field list all-or-nothing. There is no built-in
 runner: execute each `query` against a fresh Claude instance with the skill loaded and the
 **Aporia MCP server connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -108,6 +109,19 @@ scopes.
       "NEGATIVE: a run that OMITS sessionId lets the final completeScope page see the earlier pages as strangers and TOMBSTONE them — the scope keeps only its last page (the legacy self-tombstone trap); a run that mints a FRESH sessionId per page instead trips the race guard into a CONFLICT (the server refuses rather than reaps) — either way the run failed its own pagination",
       "On a CONFLICT (a different sessionId sweeping this scope) it does NOT work around it — it re-runs the whole scope under one fresh sessionId, or waits for the other sweep to finish, then retries"
     ]
+  },
+  {
+    "skills": ["aporia-sync"],
+    "name": "S-8 — entity shape drift: re-report the WHOLE field list, never a partial one",
+    "setup": "entity:billing.invoice is mapped with eight fields and was renamed / summarized by a human (origin authored, so its meaning is pinned). This PR's migration adds one column (e.g. couponCode) and retypes another (id: uuid -> string); the other six are unchanged. A second touched entity in the same scope has NO shape change at all.",
+    "query": "Sync this PR — the migration adds a coupon code to invoices and switches the id column to a string.",
+    "expected_behavior": [
+      "Re-reads the entity's CURRENT shape from the schema/model in the repo, and pushes data.fields with ALL of them — the new column, the retyped one, and the six unchanged — because data is replaced wholesale, never merged",
+      "For the untouched second entity, carries its existing fields forward verbatim (read from pull_context) rather than re-pushing it with an empty or guessed list",
+      "NEGATIVE: a run that pushes only the changed fields (or fields: []) FAILS — the omitted fields are DELETED from the map, so a 'shape refresh' silently empties the entity",
+      "Does NOT skip the refresh because the node is authored — a human's name / summary / district survive the re-scan, but an entity's field list is SHAPE the code owns and the scan is expected to relearn it",
+      "Does NOT reach for update_node or any prose door to fix a field list — apply_scan is the only door to a node's shape, and update_node renames only"
+    ]
   }
 ]
 ```
@@ -138,6 +152,11 @@ modes these scenarios exist to catch (each maps to the skill's anti-pattern list
   worldline from a branch — or closing a ticket whose fix never merged — corrupts state
   every teammate reads. The preview gate and the attestation gate are not errors to retry
   around; they are the design.
+- **A partial shape push.** `data` is replaced, not merged, so re-reporting an entity with
+  only the fields this diff changed (S-8) deletes the ones it didn't — the same class of
+  silent reap as a mis-scoped `completeScope`, one node down. The refresh is expected (an
+  entity's field list is code-owned even on an authored node), but it is all-or-nothing:
+  send the complete current list, or carry the mapped one forward verbatim.
 - **Overwriting authored intent or inventing rationale.** Sync touches as-built structure
   and the derived Implementation level only — it preserves the authored *why* verbatim and
   raises a genuinely new unknown as a question, never a fabricated decision.

@@ -1,9 +1,10 @@
 # Evaluations — aporia-onboard
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These two scenarios lock in the disciplines most likely to regress — the
+skill works. These three scenarios lock in the disciplines most likely to regress — the
 migration from a confidence-graded realization to the shipped **evidence-derived,
-binary Built** model, and the Constitution-first ground rule. There is no built-in
+binary Built** model, the Constitution-first ground rule, and the wholesale write that
+makes an entity's field list all-or-nothing. There is no built-in
 runner: execute each `query` against a fresh Claude instance with the skill loaded and the
 **Aporia MCP server connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -40,6 +41,19 @@ describes the required graph + repo `setup` instead of bundling input files.
       "Never fabricates the thesis, personas, or principles from the codebase — an unarticulable thesis is surfaced as the finding, not filled in",
       "Only proceeds to inventory/distill once a real Constitution exists for features to bind to"
     ]
+  },
+  {
+    "skills": ["aporia-onboard"],
+    "name": "O-3 — an entity's shape is all-or-nothing",
+    "setup": "Seeded product with a grounded Constitution. The repo slice defines an Invoice aggregate whose schema (e.g. src/billing/invoice.ts) declares eight columns, three of which are foreign keys to child rows that D2 folds into the aggregate. The product graph ALREADY holds entity:billing.invoice from an earlier partial run, mapped with two fields and a human-authored name and summary.",
+    "query": "Onboard the billing slice — the invoice model changed since we last looked at it.",
+    "expected_behavior": [
+      "Pushes entity:billing.invoice with its COMPLETE current field list read from the schema/model, not just the fields that differ from what search_graph showed",
+      "NEGATIVE: pushing only the new-or-changed fields (or fields: []) FAILS — data is written wholesale, so the map ends up holding ONLY what that push carried and the rest is gone",
+      "Applies D2 to the shape as well as the nodes: child-row columns folded into the aggregate rather than a separate node per table, and no field invented that the schema doesn't declare",
+      "The re-scan relearns the SHAPE while preserving the team's MEANING — it does not try to restore or rewrite the authored name / summary / district through the scan",
+      "Every field it reports traces to the schema/model it cites in externalRefs (D4) — the field list is observation, never a guess at what the entity ought to hold"
+    ]
   }
 ]
 ```
@@ -61,5 +75,9 @@ kill):
   inverse — asserting an unbuilt surface as `as_built`.
 - Scanning onto an **empty Constitution**, or fabricating the thesis / personas /
   principles from the code instead of eliciting them WITH the human (the O-2 regression).
+- Pushing an entity with a **partial field list** (the O-3 regression). `data` is written
+  wholesale, never merged, so every field left out of the push is absent from the map —
+  the same silent loss as a mis-scoped sweep, one node down. Send the complete current
+  shape, or leave the key alone.
 - Fabricating feature intent the human never stated instead of leaving it empty for
   elicitation.
