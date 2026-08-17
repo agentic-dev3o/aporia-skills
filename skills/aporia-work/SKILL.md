@@ -43,7 +43,7 @@ Work progress:
 
 ### Phase 1 — Pull + claim the ticket
 
-`aporia:pull_item { ticket: "8", claim: true }` — the **bare number always works**, whatever this product's prefix is, so prefer it over guessing a prefixed form. `claim: true` stamps an anonymous, advisory claim so the Inbox shows the ticket **In progress** and a parallel session sees it's being worked. You get:
+`aporia:pull_item { ticket: "8", claim: true }` — the **bare number always works**, whatever this product's prefix is, so prefer it over guessing a prefixed form. `claim: true` stamps an attributed, advisory claim — Aporia records and shows the acting human behind your key (and your client as the instrument), never a lock — so the Inbox shows the ticket **In progress** and a parallel session sees who's on it. You get:
 
 - **item** — kind, title, markdown body, rationale, priority, `claimedAt` (how it closes derives from its kind);
 - **targets** — the map spots it's about: node targets carry the stable `key` and `externalRefs` (the files to read first); a bug's note target carries the **decision it traces to** (the intent the code contradicts — your fix closes THAT gap, nothing more);
