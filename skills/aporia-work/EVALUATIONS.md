@@ -1,11 +1,12 @@
 # Evaluations — aporia-work
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These five scenarios lock in the disciplines most likely to regress — the
+skill works. These six scenarios lock in the disciplines most likely to regress — the
 kind gate (judgment stays human), the attestation two-step that keeps a pre-merge "done"
 honest, ticket-scope discipline, the claim etiquette that keeps two sessions from
-double-working one ticket, and the Rule refusal that has to end on a ticket rather than
-a shrug. There is no built-in runner: execute each `query`
+double-working one ticket, the Rule refusal that has to end on a ticket rather than
+a shrug, and the intent gate that turns a refused compile into an in-session
+qualification. There is no built-in runner: execute each `query`
 against a fresh Claude instance with the skill loaded and the **Aporia MCP server
 connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -79,6 +80,20 @@ describes the required graph + repo `setup` instead of bundling input files.
       "On ACME-20, whose refusal says NO open item implements it, the agent does not invent work: it puts the gap to the human and, if they agree, files a task whose PRIMARY target is the node the work touches, carrying the Rule as a secondary note target, before working it",
       "A refusal that says the docket is UNKNOWN (the scan hit its cap) is read as 'cannot tell', not 'nothing': the agent searches the inbox for items targeting the ticket before filing anything new",
       "NEGATIVE: a run that claims-and-builds the Rule, or that reports 'nothing to do, it just governs' while the refusal names an open enforcing ticket, FAILS"
+    ]
+  },
+  {
+    "skills": ["aporia-work"],
+    "name": "W-6 — intent gate: a refused compile becomes an in-session qualification",
+    "setup": "The inbox holds ACME-21, a TASK ('Build the export scheduler') whose primary target is feature:reports.export-scheduler. That feature is not built and its data.intent is EMPTY (no human ever approved a why). The repo is available.",
+    "query": "Work on ACME-21.",
+    "expected_behavior": [
+      "Grounds, pulls + claims ACME-21, then compiles aporia:feature_gaps_spec on the target feature",
+      "The spec comes back readiness blocked with an unapproved-intent blocker — the run treats the guidance as the script, not as an error",
+      "Does NOT invent or paraphrase an intent from the code or the ticket body — it ASKS the human what the feature is for and what done looks like, in their words",
+      "Records the human's approved why with aporia:apply_scan { planned: true, ... data: { intent, successCriteria } } and re-runs feature_gaps_spec before planning",
+      "Only after the spec unblocks does implementation start",
+      "NEGATIVE: a run that writes an intent the human never stated, or that builds from the blocked spec anyway, FAILS — the principle is that feature intent is never invented by AI without explicit human approval"
     ]
   }
 ]

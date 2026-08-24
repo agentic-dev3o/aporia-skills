@@ -1,11 +1,13 @@
 # Evaluations — aporia-sync
 
 Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These eight scenarios lock in the disciplines most likely to regress — the
+skill works. These ten scenarios lock in the disciplines most likely to regress — the
 scope-boundary rules that decide when `completeScope` is safe, the same-session pagination
 spare, the canonical-worldline gate that keeps a branch scan a preview, the attestation
-half of the close (PR-linked when one exists), the binary scan-owned Built axis, and the
-wholesale replace that makes a re-reported entity's field list all-or-nothing. There is no built-in
+half of the close (PR-linked when one exists), the binary scan-owned Built axis, the
+wholesale replace that makes a re-reported entity's field list all-or-nothing, the
+post-merge decision capture that must settle in its own run, and the partial-carry path
+that comments instead of closing. There is no built-in
 runner: execute each `query` against a fresh Claude instance with the skill loaded and the
 **Aporia MCP server connected to a seeded test product**, then score the transcript against
 `expected_behavior`.
@@ -122,6 +124,32 @@ scopes.
       "Does NOT skip the refresh because the node is authored — a human's name / summary / district survive the re-scan, but an entity's field list is SHAPE the code owns and the scan is expected to relearn it",
       "Does NOT reach for update_node or any prose door to fix a field list — apply_scan is the only door to a node's shape, and update_node renames only"
     ]
+  },
+  {
+    "skills": ["aporia-sync"],
+    "name": "S-9 — post-merge capture: a stated decision lands settled, never as inbox debt",
+    "setup": "An unattended post-merge sync runs ON the canonical ref (clean). The merged PR's description and commit message STATE the choices behind a new voting feature (e.g. 'the public API exposes hasVoted plus display order, never a raw count — counts stay staff-only'). The target feature node is still state=intended from an earlier planning pass, and no existing inbox item carries this verdict.",
+    "query": "Post-merge sync on main — the voting PR just landed.",
+    "expected_behavior": [
+      "Phase 3/4 realizes the feature: reports it as_built with its own externalRefs of kind code, so the node stops reading intended the moment its code is on the trunk",
+      "Phase 5 captures the stated decision — split test applied, so a clause that still binds in two years may come out a rule — with a timeless title/body per content-style and a rationale citing WHERE the why was stated (the PR body / commit message), not a paraphrase of the commit",
+      "Phase 6 settles the capture in the SAME run: the shortId that record_notes returned rides the resolve_items call with the scanned code evidence, so the verdict lands on the node as a settled choice, not an open triage row",
+      "NEGATIVE: the observed field regression FAILS — a run that mints a decision whose body restates the commit message, leaves it open, leaves the node intended, and never calls resolve_items has manufactured stale triage, not memory",
+      "Had the why NOT been stated anywhere citable, it files a question (or nothing) — it never authors a decision from the diff"
+    ]
+  },
+  {
+    "skills": ["aporia-sync"],
+    "name": "S-10 — partly-carried decision: comment + missing-side task, never a majority close",
+    "setup": "An open directive decision states four clauses. The canonical code the sync re-scans carries three (each citable as file/symbol); the fourth (e.g. 'voting subscribes the org to the availability email') has no code behind it. The decision rides a feature node this diff touched.",
+    "query": "Post-merge sync — close out what this merge finished.",
+    "expected_behavior": [
+      "Phase 6 judges the decision clause-by-clause against the scanned code, finds it PARTLY carried, and passes NO resolve verdict for it",
+      "Comments the item (aporia:comment_item) with the clause-by-clause reading — each carried clause cited as a code fact, the missing one named as absent",
+      "Files the missing-side task with the feature node as primary target and the decision note as secondary, so the residue is claimable work",
+      "The hand-off names it explicitly — the ticket cannot fully close, and what is missing — rather than burying it under the resolved list",
+      "NEGATIVE: a run that resolves on three-of-four evidence closes work that is not done, and a run that leaves the item untouched and unmentioned strands it open forever — both FAIL"
+    ]
   }
 ]
 ```
@@ -160,3 +188,10 @@ modes these scenarios exist to catch (each maps to the skill's anti-pattern list
 - **Overwriting authored intent or inventing rationale.** Sync touches as-built structure
   and the derived Implementation level only — it preserves the authored *why* verbatim and
   raises a genuinely new unknown as a question, never a fabricated decision.
+- **A capture left as debt.** Post-merge decision capture exists to keep the *why* of what
+  merged; a captured decision the code fully carries that is not settled by the same run's
+  Phase 6 — or one whose body paraphrases the commit message — is manufactured triage, not
+  memory (S-9). The why must be one a human stated, and the settle must be the same run.
+- **A partial carry mis-closed.** Majority evidence never closes a decision (S-10); the
+  honest landing is the clause-by-clause comment, the missing-side task, and the hand-off
+  flag. Leaving the item silently open is the same failure from the other side.

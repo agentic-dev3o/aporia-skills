@@ -6,11 +6,14 @@ description: >-
   Re-inventories only the subsystems the change touched (aporia:apply_scan),
   re-derives each touched feature's Built state from the code evidence it can cite,
   flags open questions/tensions whose premise the code moved (comment, never
-  close), and closes sync-watched inbox items with code evidence
-  (aporia:resolve_items — resolve, reopen on contradiction, or attest pre-merge).
-  Use when syncing a PR to Aporia, updating the map after a merge, refreshing
-  as-built before merging, re-scanning changed code into the map, or closing the
-  Aporia ticket a PR fixes.
+  close), closes sync-watched inbox items with code evidence
+  (aporia:resolve_items — resolve, reopen on contradiction, or attest pre-merge),
+  captures the decisions and rules a merged change embodied (stated why only,
+  post-merge only, settled in the same run), and hands a partly-carried decision
+  its clause-by-clause comment + missing-side task instead of a close. Use when
+  syncing a PR to Aporia, updating the map after a merge, refreshing as-built
+  before merging, re-scanning changed code into the map, recording what a merge
+  decided, or closing the Aporia ticket a PR fixes.
 ---
 
 # Aporia PR sync
@@ -23,7 +26,7 @@ Run it **before opening a PR** (preview the delta the change creates) or **after
 
 The same Recognition Test as onboarding, plus one sync-specific line: **after a sync, every feature the PR touched reads its true Built state** — `Built` only if the code really carries it, `Not built` if it's still just intent. A sync that leaves a feature reading `Built` when no code carries it has failed.
 
-The hard line is unchanged: **report structure with evidence; never fabricate intent.** Sync touches as-built reality — it never authors or rewrites the *why*. Preserve authored intent and notes verbatim; a re-scan that rediscovers an authored node realizes it, it does not clobber it.
+The hard line is unchanged: **report structure with evidence; never fabricate intent.** Sync touches as-built reality — it never *authors* the why. It may **carry** a why a human actually stated (Phase 5's post-merge capture, which cites its source); supplying one nobody stated is fabrication. Preserve authored intent and notes verbatim; a re-scan that rediscovers an authored node realizes it, it does not clobber it.
 
 ## The Built axis (what your scan controls)
 
@@ -40,7 +43,7 @@ That second line is the whole point: a feature is not Built because the componen
 
 Through the **Aporia MCP server only**, pinned to one product (org + product derived from the API key — you never pass them). Call tools fully-qualified as `aporia:*` so they resolve alongside other MCP servers. If they're unavailable, stop and tell the user to configure the Aporia MCP server (`APORIA_API_KEY` + `APORIA_PRODUCT_ID`).
 
-Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull_context` (what's already mapped + a feature's current bindings), `aporia:apply_scan` (push the refreshed structure + edges), `aporia:record_notes` (new questions/tensions, and the tasks/bugs that name what a built-but-mocked feature is still missing), `aporia:resolve_items` (close sync-watched items with the evidence this scan produced; reopen closed items it contradicts). (To go the other way — compile a feature's gap into a build plan before writing code — use `aporia:feature_gaps_spec`; this skill closes the loop that opens.)
+Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull_context` (what's already mapped + a feature's current bindings), `aporia:apply_scan` (push the refreshed structure + edges), `aporia:record_notes` (new questions/tensions, the tasks/bugs that name what a built-but-mocked feature is still missing, and the post-merge capture of stated decisions/rules), `aporia:comment_item` (premise flags on open questions/tensions; the clause-by-clause reading on a partly-carried decision), `aporia:resolve_items` (close sync-watched items with the evidence this scan produced — this run's own captures included; reopen closed items it contradicts). (To go the other way — compile a feature's gap into a build plan before writing code — use `aporia:feature_gaps_spec`; this skill closes the loop that opens.)
 
 ## Workflow
 
@@ -53,10 +56,12 @@ Sync progress:
 - [ ] Phase 2 — Re-inventory + distill the touched slices (D1–D4 + D6)
 - [ ] Phase 3 — Re-derive Built: the feature's own code evidence + its bindings, read from code (the Realization Probe)
 - [ ] Phase 4 — aporia:apply_scan per touched scope (sessionId + observed on every page; completeScope on its final page)
-- [ ] Phase 5 — aporia:record_notes: new questions/tensions; flag each built-but-mocked feature's missing side
+- [ ] Phase 5 — aporia:record_notes: new questions/tensions; each built-but-mocked feature's missing side; post-merge, the stated decisions/rules the merge embodied
 - [ ] Phase 5b — Premise check: comment on open questions/tensions whose premise the code moved — flag only, never close
-- [ ] Phase 6 — aporia:resolve_items: close sync-watched items the code now proves; reopen what it contradicts
+- [ ] Phase 6 — aporia:resolve_items: close sync-watched items the code now proves (this run's captures included); reopen what it contradicts; comment + task each partly-carried decision
 ```
+
+**The run is one loop — finish it.** The phases are ordered because each depends on the last: the scan (4) is what makes the notes (5) honest and the verdicts (6) possible. A run that records notes and stops — no scan pushed, no Phase 6 verdicts — leaves the map WORSE than no run at all: fresh open items aimed at nodes whose state the same run left stale, which is the exact shape of inbox rot. If you cannot finish the loop, stop before Phase 5, not after it.
 
 ### Phase 0 — Ground
 
@@ -68,6 +73,8 @@ Sync progress:
 - an **`observed`** worldline — `{ ref, sha }` from git: `git rev-parse --abbrev-ref HEAD` for `ref` and `git rev-parse HEAD` for `sha` (add `dirty: true` if `git status --porcelain` is non-empty). Pass it on every `apply_scan` too — it stamps each node/edge with which code state observed it.
 
 Also read the branch name: **`<code>-<n>-…` names the ticket this diff intends to close** (`<code>` is the product's `shortCode` lowercased, from `pull_constitution` — the /aporia-work convention). Note the number — Phase 6 checks that item's evidence first.
+
+On a **post-merge canonical run**, also gather the merged change's **stated discourse** — `gh pr view <n> --json title,body,comments` (or the merge commit's body from `git log`). That is the only admissible source for Phase 5's decision capture: what a human actually stated, never what the diff implies.
 
 ### Phase 1 — Diff scope (the whole point — stay narrow)
 
@@ -105,11 +112,16 @@ Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` o
 
 ### Phase 5 — Record what the change surfaced
 
-`aporia:record_notes` for the discourse a change creates — each targeting the node(s) it's about by `key`, each a ≤60-char headline `title` over a markdown `body` sized per [content-style](references/shared/content-style.md); a missing-side task's body names the mock / the `TODO` / the missing side in a line or two:
+`aporia:record_notes` for the discourse a change creates — each targeting the node(s) it's about by `key`, each a ≤60-char headline `title` over a markdown `body` sized per [content-style](references/shared/content-style.md); a missing-side task's body names the mock / the `TODO` / the missing side in a line or two.
+
+**Two gates before any note.** It rides a node **this diff touched** — a sync never files an item about pre-existing state on a node the change didn't move; that is the backlog's business, not this run's narration. And it **owes the team a verdict or a unit of work** — an observation that owes nobody stays in the PR body. A sync that files what it merely noticed turns the inbox into a log.
 
 - a **`task`** (or a **`bug`**, when the gap contradicts a decision the team already made) on any feature whose structure is built-but-mocked — naming the missing side / the mock / the `TODO`. This is the visible "what's left to build", and unlike the flag it replaces it carries a title, an owner and closure evidence. A later scan that proves the missing side landed attests it, and a human confirms. (A feature whose binding is still `planned` needs no task — the unbuilt binding already says so.)
 - a **tension** when the new code **contradicts an authored decision** (drift) — target both the decision note and the thing that breaks it;
 - a **question** for a new unknown the change raises **that gates further work** — someone owes an answer before something can proceed. A finding that is merely interesting, or that you could act on tomorrow without anyone deciding anything, is not a question; a sync that files one per observation turns the inbox into a log. **And if a human is in this session, ask them before you file** — a question they answer in a sentence should become a decision (or nothing at all), not a triage row addressed to someone who is already reading. File only what they defer, decline to settle now, or aren't the right person for. Running unattended (a post-merge or CI sync, nobody to ask) — file it.
+- a **decision** — or a **rule**, when the sentence still binds in two years (the split test; when it is BOTH law and work, mint the pair in one call: the rule first, then the task carrying its own node target as primary plus `{ "refType": "note", "ref": "#0", "role": "secondary" }`) — **only on the post-merge canonical run, and only for a why a human actually stated** in the PR description or discussion, a commit message's rationale, or the session's own discourse. This is how the map keeps the *why* of what just merged. It is not a change-log: the title and body state the choice in timeless voice per [content-style](references/shared/content-style.md) — a body that paraphrases the commit message is the *status report* anti-pattern, and a why nobody stated is a **question** or nothing. Before minting, `pull_context` the target: a verdict an open item already carries takes a `comment_item`, not a twin; one the merge contradicts is a tension; an open question the capture answers closes through `resolves` on the capture itself. And never capture decisions from an unmerged branch — a rejected PR must leave no phantom law behind.
+
+**A capture is not inbox debt — the run that mints it settles it.** The scan you just pushed holds the capture's evidence: hand the `shortId` that `record_notes` returned to Phase 6, where the code that carries its verdict resolves it in the same call as everything else. It lands on the node as a settled choice with its rationale — which is the whole point of a post-merge capture — instead of another open triage row. A run that mints a decision about built code and leaves it open, worse still aimed at a node the same run left `intended`, has manufactured stale triage, not memory. And when the code carries the verdict only partly, neither resolve nor walk away: Phase 6's partial-carry path is the honest landing.
 
 Never invent rationale, and never re-author intent — if the *why* of a change wasn't stated, it's a question for the team, not a decision. (`blocksImplementation` is deprecated — the server accepts and ignores it. File the task instead.)
 
@@ -124,13 +136,24 @@ The scan just read the nodes that open **questions and tensions** hang on — so
 Sync doesn't just report structure — it settles the **inbox items whose closure is code-evident**. Gather the candidates:
 
 1. the **branch ticket** from Phase 0 (`<code>-<n>` — the item this diff explicitly set out to close);
-2. the **open notes on the nodes you re-scanned** — `pull_context` notes carry a `shortId`. Every open **bug, task or directive decision** is a candidate; how it closes derives from its kind, so you never read a per-item flag. The missing-side task whose mock this PR replaced belongs here (Phase 3).
+2. the **open notes on the nodes you re-scanned** — `pull_context` notes carry a `shortId`. Every open **bug, task or directive decision** is a candidate; how it closes derives from its kind, so you never read a per-item flag. The missing-side task whose mock this PR replaced belongs here (Phase 3);
+3. the **captures Phase 5 of this run minted** — `record_notes` returned each one's `shortId`; a post-merge capture the scanned code fully carries is settled here, in the run that minted it, never left as fresh debt.
 
 For each candidate, judge against the code you just scanned — then one `aporia:resolve_items` call (pass the same `observed` `{ ref, sha }` from Phase 0; ≤50 items per call — page past that) with per-item verdicts. On a **gated (off-canonical) run**, also check for an open PR — `gh pr view --json number,url` — and attach `pullRequest: { number, url }` to each branch `resolve`, so the attestation carries the link (the Inbox reads *"Fix ready · PR #n"*). No PR yet? Note in your hand-off that re-running `aporia:resolve_items` after opening it upgrades the attestation (attestation is latest-wins). The server guards it hard: a `pullRequest` on a canonical resolve or on a `reopen` SKIPS THAT WHOLE ITEM rather than dropping the field, so the item does not close at all. Attach it only on the off-canonical resolve path, and never on the post-merge run.
 
 - **`resolve`** when the code now proves it — the bug's drift is gone, the directive's verdict is built, the chore landed. `evidence` cites the code fact (file/symbol/test), not "done": *"checkout.ts persists the coupon; regression test added"*.
 - **`reopen`** when the code CONTRADICTS a resolved sync-watched item — an optimistic hand-close the diff disproves, or a regression that resurrects a fixed bug. The map stays honest by re-checking, not by forbidding.
 - **leave alone** anything you can't cite evidence for — an item you merely believe is done stays open for the next scan or a human.
+
+**Evidence is the scanned code's current state, not this diff's authorship.** An open sync-watched item on a node you re-scanned whose demand the code already satisfies — even by a change that landed PRs ago — closes now, citing that code. Leaving it open because "this PR didn't build it" is how a docket rots into a backlog nobody trusts.
+
+**The partial-carry path — a decision the code only partly proves.** A directive decision some of whose clauses the scan can cite and some it cannot gets neither a resolve nor silence:
+
+- `aporia:comment_item` on it with the clause-by-clause reading — each carried clause cited as a code fact (file/symbol), each missing one named as absent;
+- a missing-side **task** (Phase 5's shapes: the feature as primary target, the decision note as secondary) so the residue is claimable work instead of a haunting;
+- a named line in your hand-off — *"<ticket> cannot fully close — missing: …"* — so a human reads it today, and the map's own signals (the comment, the task) carry it after you.
+
+Resolving on majority evidence closes work that isn't done; saying nothing strands the decision open forever. Both are the map lying.
 
 The response reports per-item outcomes `{ resolved, reopened, attested, skipped }`.
 
@@ -147,7 +170,10 @@ The response reports per-item outcomes `{ resolved, reopened, attested, skipped 
 - [ ] Every `aporia:apply_scan` returned `skippedEdges: 0` (or each skip is understood).
 - [ ] Every note recorded has a ≤60-char headline `title` and a markdown `body` ([content-style](references/shared/content-style.md)).
 - [ ] The branch's `<code>-<n>` ticket was checked, and every sync-watched item on the touched nodes got a verdict: resolved with cited evidence, reopened on contradiction, or deliberately left for lack of evidence.
+- [ ] Every item minted this run rides a node the diff touched and owes a verdict or a unit of work — no observations, no notes about pre-existing state the change didn't move.
+- [ ] Any captured decision/rule cites a human-stated why with its source, on the post-merge canonical run only — and one the code fully carries was settled by this same run's Phase 6.
+- [ ] Every partly-carried decision got its clause-by-clause comment, its missing-side task, and a hand-off line — never a majority-evidence resolve, never silence.
 
 ## Anti-patterns (reject)
 
-Re-scanning the whole repo for a one-package change · `completeScope` on a scope you only partially re-scanned (the server **refuses** a disproportionate sweep with a `BAD_REQUEST` — don't try to force it; drop `completeScope`, re-scan the whole scope under one sessionId, or `dryRun` to preview first) · re-reporting an entity with a partial (or empty) `fields` array because only some columns changed — `data` is replaced wholesale, so every field you omit is deleted · reporting a mock's structure as_built without filing the task that names the missing side · claiming a feature's own `externalRefs` when no code carries it · citing a document (`kind: "doc"`) as if it were code evidence · trying to raise a feature by writing a grade instead of reporting the evidence you can cite · overwriting an authored `intent` or decision with scan output · inventing a rationale for why the code changed · filing a question at a human who is in the session with you instead of asking them · filing a question that gates nothing, turning the inbox into a log of things the scan noticed · resolving an item with "done" instead of a citable code fact · reopening a superseded item (that's a human verdict — the tool refuses it anyway).
+Re-scanning the whole repo for a one-package change · `completeScope` on a scope you only partially re-scanned (the server **refuses** a disproportionate sweep with a `BAD_REQUEST` — don't try to force it; drop `completeScope`, re-scan the whole scope under one sessionId, or `dryRun` to preview first) · re-reporting an entity with a partial (or empty) `fields` array because only some columns changed — `data` is replaced wholesale, so every field you omit is deleted · reporting a mock's structure as_built without filing the task that names the missing side · claiming a feature's own `externalRefs` when no code carries it · citing a document (`kind: "doc"`) as if it were code evidence · trying to raise a feature by writing a grade instead of reporting the evidence you can cite · overwriting an authored `intent` or decision with scan output · inventing a rationale for why the code changed · filing a question at a human who is in the session with you instead of asking them · filing a question that gates nothing, turning the inbox into a log of things the scan noticed · resolving an item with "done" instead of a citable code fact · reopening a superseded item (that's a human verdict — the tool refuses it anyway) · minting a decision whose body paraphrases the commit message or the diff — a status report wearing a verdict's face; the why must be one a human stated, or it's a question · capturing decisions from an unmerged branch (a rejected PR must leave no phantom law) · minting a post-merge decision about built code and leaving it open — or aimed at a node the same run left `intended` — instead of settling it in Phase 6 · filing an item on a node the diff didn't touch — narrating the backlog instead of syncing the change · resolving a partly-carried decision on majority evidence, or leaving it silently open instead of comment + missing-side task + hand-off flag · a notes-only run — `record_notes` without the same run's scan and verdicts.
