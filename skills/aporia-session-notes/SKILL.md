@@ -171,7 +171,7 @@ Notes land `provisional` / `open`, authored by your agent — flagged for the te
 
 ### Attach a rendered artifact (optional)
 
-When the session produced a rendered document — a Markdown spec, a Claude Artifact's HTML, a PDF (≤10 MB) — drop it onto its note or map node with `aporia:attach_file`, so the team opens it **rendered** in the Inbox or Node Workspace instead of reading markup in chat history:
+When the session produced a rendered artifact — a Markdown spec, a Claude Artifact's HTML, a PDF, or a PNG/JPEG screenshot (≤10 MB, and smaller still for an image: it must fit what one `read_attachment` can hand back, so downscale a big screenshot before sending) — drop it onto its note or map node with `aporia:attach_file`, so the team opens it **rendered** in the Inbox or Node Workspace instead of reading markup in chat history:
 
 ```jsonc
 // aporia:attach_file input — pass exactly one target
@@ -180,9 +180,9 @@ When the session produced a rendered document — a Markdown spec, a Claude Arti
 { "nodeKey": "feature:billing.checkout", "filename": "spec.md", "fileType": "markdown", "content": "# Checkout spec\n…" }
 ```
 
-`noteId` comes from the `notes` refs `aporia:record_notes` just returned (or an existing note's id from `aporia:pull_context`); `nodeKey` is a map node's stable key from `aporia:search_graph` or `aporia:pull_context`. Pass **exactly one** of `noteId` or `nodeKey`. `fileType` is `markdown` | `html` | `pdf`; `content` rides inline — UTF-8 text, base64 for a pdf.
+`noteId` comes from the `notes` refs `aporia:record_notes` just returned (or an existing note's id from `aporia:pull_context`); `nodeKey` is a map node's stable key from `aporia:search_graph` or `aporia:pull_context`. Pass **exactly one** of `noteId` or `nodeKey`. `fileType` is `markdown` | `html` | `pdf` | `png` | `jpeg`; `content` rides inline — UTF-8 text for markdown/html, base64 for a pdf or an image.
 
-**The door reads both ways.** What you attach is not write-only: `aporia:pull_item` and `aporia:pull_context` list every artifact as metadata (`attachmentId`, `filename`, `fileType`, `size`, `createdAt`), and `aporia:read_attachment { attachmentId }` hands back the content — UTF-8 text for markdown/html, paged with `offsetBytes` / `length` while `truncated` is true, or a whole PDF as base64. So before you attach a second spec to a note, read the one already there; and when you pick up a ticket whose body references a document, read the document rather than guessing at it.
+**The door reads both ways.** What you attach is not write-only: `aporia:pull_item` and `aporia:pull_context` list every artifact as metadata (`attachmentId`, `filename`, `fileType`, `size`, `createdAt`), and `aporia:read_attachment { attachmentId }` hands back the content — UTF-8 text for markdown/html, paged with `offsetBytes` / `length` while `truncated` is true; a PNG or JPEG as a real image block you can see, downscaled and flagged `downscaled` when the original is too big to return whole; a whole PDF as base64. So before you attach a second spec to a note, read the one already there; and when you pick up a ticket whose body references a document, read the document rather than guessing at it.
 
 ## Recording a feature's process (observed behavior)
 
