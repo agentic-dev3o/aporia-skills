@@ -21,10 +21,10 @@ This is the contract for *how* text is shaped; the skill that sent you here says
 | persona `situation` | the dossier portrait | 2–5-sentence JTBD narrative, light emphasis, no headings |
 | principle `statement` | a law in a list | one testable sentence, plain |
 | principle `rationale` | under the law | 1–2 markdown sentences tying it to the bet |
-| thesis `product` / `problem.statement` | the footer band | 1–2 plain sentences, ≤200 chars each |
-| thesis `shift` / `whyNow` / `endState` | a numbered card | ONE claim, plain prose, ≤200 chars (~30 words) |
-| thesis `bet` | the highlighted card | the falsifiable claim, ≤240 chars (~35 words) |
-| thesis `falsifiedIf` | the falsifier strip | what would prove the bet wrong, ≤140 chars (~20 words) |
+| thesis `product` / `problem.statement` | the footer band | plain sentences, ≤1024 chars each |
+| thesis `shift` / `whyNow` / `endState` | a numbered card | ONE claim with the context it needs, plain prose, ≤1024 chars |
+| thesis `bet` | the highlighted card | the falsifiable claim, ≤1024 chars |
+| thesis `falsifiedIf` | the falsifier strip | what would prove the bet wrong, ≤1024 chars |
 | process `name` | the swimlane title | 2–4 words naming the flow |
 | process lane label | a swimlane header | 1–3 words |
 | process step label | a box on the canvas | 2–5 words, verb-first |
