@@ -87,6 +87,18 @@ scopes.
   },
   {
     "skills": ["aporia-sync"],
+    "name": "S-5b — Cursor cloud `cursor/*` branches behave like canonical on clean direct checkouts",
+    "setup": "The product declares a canonicalRef (e.g. main). The agent runs on a Cursor-created branch named cursor/<something>, but that branch points to the exact same commit as canonicalRef and the working tree is clean. The branch name alone must not force preview.",
+    "query": "Sync my Cursor cloud branch's changes to the shared map.",
+    "expected_behavior": [
+      "Phase 0 applies the Cursor special-case: since the current ref starts with cursor/ AND points at the same commit as canonicalRef, Phase 0 stamps observed.ref as canonicalRef",
+      "Therefore the scan is not forced to preview: apply_scan returns mode:'applied' (when dryRun is false) and writes as-built structure",
+      "Phase 6 treats resolve as canonical (no branch attestation): sync-watched items close instead of only accumulating an attested count",
+      "NEGATIVE: a run that keeps observed.ref as the cursor/* branch (off-canonical) must force mode:'preview' and only attest, never close"
+    ]
+  },
+  {
+    "skills": ["aporia-sync"],
     "name": "S-6 — rejected PR: no false as-built, no falsely-closed ticket",
     "setup": "A pre-PR sync ran on a feature branch (canonicalRef declared, so the scan was forced to preview and wrote nothing). The branch also carries a sync-watched ticket <code>-<n> whose fix IS proven in the branch's code, and an open PR exists for the branch (e.g. #57). The PR is then closed / rejected — the branch never merges.",
     "query": "Walk me through what the shared map should hold after that PR was rejected.",

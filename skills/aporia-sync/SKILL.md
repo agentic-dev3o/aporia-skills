@@ -7,7 +7,7 @@ description: >-
   re-derives each touched feature's Built state from the code evidence it can cite,
   flags open questions/tensions whose premise the code moved (comment, never
   close), closes sync-watched inbox items with code evidence
-  (aporia:resolve_items — resolve, reopen on contradiction, or attest pre-merge),
+  (aporia:resolve_items — resolve, reopen on contradiction, attest pre-merge, or release a landed-but-unfinished attestation),
   captures the decisions and rules a merged change embodied (stated why only,
   post-merge only, settled in the same run), and hands a partly-carried decision
   its clause-by-clause comment + missing-side task instead of a close. Use when
@@ -70,7 +70,11 @@ Sync progress:
 **Mint the run's identity once, up front:**
 
 - a **`sessionId`** — one fresh UUID for this whole sync run (e.g. `uuidgen`, or any random UUID). Hold it and pass it **unchanged** on **every** `aporia:apply_scan` page of **every** scope you push below. It groups a scope's pages into one run so the final `completeScope` page can't tombstone the earlier pages of the same run (Phase 4), and it lets Aporia detect a *concurrent* sync racing the same scope.
-- an **`observed`** worldline — `{ ref, sha }` from git: `git rev-parse --abbrev-ref HEAD` for `ref` and `git rev-parse HEAD` for `sha` (add `dirty: true` if `git status --porcelain` is non-empty). Pass it on every `apply_scan` too — it stamps each node/edge with which code state observed it.
+- an **`observed`** worldline — `{ ref, sha }` from git: `git rev-parse --abbrev-ref HEAD` for `ref` and `git rev-parse HEAD` for `sha` (add `dirty: true` if `git status --porcelain` is non-empty). **Cursor cloud special-case:** when the current branch name starts with `cursor/` and it points to the **same commit** as the constitution's `canonicalRef` (so `git rev-parse HEAD` equals `git rev-parse <canonicalRef>`), stamp `observed.ref` as the `canonicalRef` instead. Pass it on every `apply_scan` too — it stamps each node/edge with which code state observed it.
+
+Branch-name canonicalization for cloud runs:
+
+- If the current git ref starts with `cursor/` AND the working tree is clean AND `git rev-parse HEAD` equals `git rev-parse main`, then set `observed.ref` to `main` (keep `observed.sha` as `HEAD`). This treats the scan like it is running on the trunk, so `apply_scan` can write as-built truth instead of being forced into preview mode.
 
 Also read the branch name: **`<code>-<n>-…` names the ticket this diff intends to close** (`<code>` is the product's `shortCode` lowercased, from `pull_constitution` — the /aporia-work convention). Note the number — Phase 6 checks that item's evidence first.
 
@@ -108,7 +112,7 @@ Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` o
 
 **Preview before you sweep with `dryRun`.** Running a real PR-preview? Call `aporia:apply_scan` with `dryRun: true` to compute the would-be delta **without writing anything**: it returns `mode: "preview"`, `wouldRemoveKeys` (the nodes a `completeScope` would tombstone — capped at 50), and `notices` (a guard refusal or a race surfaces here as a note instead of throwing, so a preview always returns its delta). Use it as the pre-PR self-check — confirm `wouldRemoveKeys` names exactly the code the PR deleted (past 50 it truncates; page the scope rather than eyeball a truncated list) and no `notices` warn of a disproportionate sweep, *then* run the real (non-dryRun) scan.
 
-**The canonical worldline gate.** When a product declares a canonical ref (its trunk, e.g. `main`), a scan whose `observed.ref` is **not** that ref — a feature branch — or whose working tree is **dirty** is **server-forced to `mode: "preview"` and writes nothing**, returning a `notice` that names the canonical ref. This is by design: as-built truth is shared state that belongs to the trunk, so **you cannot write it from a branch**. A pre-merge sync is therefore always a preview (use it to check the delta); the scan that actually writes as-built runs **after the merge, observed on the canonical ref (clean)**. If your scan comes back `preview` with a canonical-ref notice when you expected it to write, that is the gate — merge first, then re-scan on the trunk. And on a run Phase 0 already told you is gated, the per-scope `dryRun` preview **is** the push: run it for **every** touched scope and read its full delta (`wouldRemoveKeys` + `notices`) as the pre-PR self-check — a single-node probe verifies the gate but not the delta, and no as-built write will land before the merge either way.
+**The canonical worldline gate.** When a product declares a canonical ref (its trunk, e.g. `main`), a scan whose `observed.ref` is **not** that ref — a feature branch — or whose working tree is **dirty** is **server-forced to `mode: "preview"` and writes nothing**, returning a `notice` that names the canonical ref. This is by design: as-built truth is shared state that belongs to the trunk, so **you cannot write it from a branch**. A pre-merge sync is therefore always a preview (use it to check the delta); the scan that actually writes as-built runs **after the merge, observed on the canonical ref (clean)**. If you're on a Cursor-created `cursor/*` branch that points at the same commit as `canonicalRef`, Phase 0's special-case sets `observed.ref` to `canonicalRef`, so the gate behaves like a canonical run. If your scan comes back `preview` with a canonical-ref notice when you expected it to write, that is the gate — merge first, then re-scan on the trunk. And on a run Phase 0 already told you is gated, the per-scope `dryRun` preview **is** the push: run it for **every** touched scope and read its full delta (`wouldRemoveKeys` + `notices`) as the pre-PR self-check — a single-node probe verifies the gate but not the delta, and no as-built write will land before the merge either way.
 
 ### Phase 5 — Record what the change surfaced
 
@@ -143,6 +147,7 @@ For each candidate, judge against the code you just scanned — then one `aporia
 
 - **`resolve`** when the code now proves it — the bug's drift is gone, the directive's verdict is built, the chore landed. `evidence` cites the code fact (file/symbol/test), not "done": *"checkout.ts persists the coupon; regression test added"*.
 - **`reopen`** when the code CONTRADICTS a resolved sync-watched item — an optimistic hand-close the diff disproves, or a regression that resurrects a fixed bug. The map stays honest by re-checking, not by forbidding.
+- **`release`** — post-merge canonical run only — when an item carries a *merge-awaiting* attestation from a branch that has now **landed** (`git merge-base --is-ancestor <attestation.sha> HEAD`) and you are NOT resolving it because the rest of the item is still unbuilt. The server clears the stamp, keeps the item open, and posts your `evidence` (what is still missing) as a comment on the thread. Without it, a ticket built in stages reads *"fix ready"* for as long as it lives. Off the canonical ref it is skipped.
 - **leave alone** anything you can't cite evidence for — an item you merely believe is done stays open for the next scan or a human.
 
 **Evidence is the scanned code's current state, not this diff's authorship.** An open sync-watched item on a node you re-scanned whose demand the code already satisfies — even by a change that landed PRs ago — closes now, citing that code. Leaving it open because "this PR didn't build it" is how a docket rots into a backlog nobody trusts.
@@ -155,7 +160,7 @@ For each candidate, judge against the code you just scanned — then one `aporia
 
 Resolving on majority evidence closes work that isn't done; saying nothing strands the decision open forever. Both are the map lying.
 
-The response reports per-item outcomes `{ resolved, reopened, attested, skipped }`.
+The response reports per-item outcomes `{ resolved, reopened, attested, released, skipped }`.
 
 **The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not) — with the PR link when you attached `pullRequest`. That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. **A scan attests what it cannot close.** The same `attested` outcome covers the other way authority can be missing: an item whose KIND is a human's to close (a task). Do **not** withhold a `resolve` because you lack the authority — cite the evidence and let the server decide. It stamps an `awaiting: "confirm"` attestation, the item stays open, and the human closes it in one click with your reasoning already attached. Withholding is how evidence dies: a task proven by a scan and never attested sat open six days with a comment saying it had shipped. Never close an item whose evidence you didn't actually scan this run — but never drop evidence you did.
 
