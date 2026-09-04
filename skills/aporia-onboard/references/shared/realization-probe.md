@@ -31,6 +31,6 @@ Probe the slice, **citing the deciding refs** for each:
 
 Note what the second row does **not** say: a feature is never Built because the components it points at happen to exist. Evidence about a feature must be the feature's own code. And a document you are citing — a blueprint, a PDF, a Figma frame — goes in `externalRefs` with `kind: "doc"`; it is shown to the team but it never makes anything Built.
 
-**There is no Partial.** A feature that is built but mocked, gated, or half-wired is Built *plus an open task* naming what's missing. That is strictly more useful than a flag: the task carries a title, an owner and closure evidence, and the later sync that proves the missing side landed closes it via `aporia:resolve_items` with that evidence. (`blocksImplementation` is deprecated — the server accepts and ignores it.)
+**There is no Partial.** A feature that is built but mocked, gated, or half-wired is Built *plus an open task* naming what's missing. That is strictly more useful than a flag: the task carries a title, an owner and closure evidence, and the later sync that proves the missing side landed closes it via `aporia:resolve_items` with that evidence.
 
 The probe reads from code; the *why* (intent, success criteria, persona served) is elicited from the human, never fabricated from the probe.

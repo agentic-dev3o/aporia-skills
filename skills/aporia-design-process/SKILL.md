@@ -36,7 +36,7 @@ Tools: `aporia:pull_constitution` (personas to populate lanes), `aporia:search_g
 
 ## Workflow
 
-Copy this checklist into your response and check off each phase:
+The phases, in order:
 
 ```
 Design process progress:

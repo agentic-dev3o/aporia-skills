@@ -63,7 +63,7 @@ The doors above correct an **item**. When the thing that is wrong is a **node's 
 
 ## Workflow
 
-Copy and track:
+The phases, in order:
 
 ```
 Session notes progress:

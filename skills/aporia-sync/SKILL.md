@@ -18,7 +18,7 @@ description: >-
 
 # Aporia PR sync
 
-Onboarding is a one-time bootstrap; **this is the heartbeat.** A codebase changes every PR, and the map is only worth trusting if `as_built` tracks the code continuously. This skill is the map's **repo-facing half**: a *diff-scoped* re-scan that keeps the structure objective and, crucially, **moves each touched feature along its Implementation axis** as the code that backs it appears, matures, or regresses.
+Onboarding is a one-time bootstrap; **this is the heartbeat.** A codebase changes every PR, and the map is only worth trusting if `as_built` tracks the code continuously. This skill is the map's **repo-facing half**: a *diff-scoped* re-scan that keeps the structure objective and, crucially, **re-derives whether each touched feature reads Built** as the code that backs it lands or disappears.
 
 Run it **before opening a PR** (preview the delta the change creates) or **after a merge** (record the new as-built truth). It is idempotent and key-reconciled — re-running converges, never duplicates.
 
@@ -37,7 +37,7 @@ The hard line is unchanged: **report structure with evidence; never fabricate in
 
 That second line is the whole point: a feature is not Built because the components it points at happen to exist. A cited document belongs in `externalRefs` with `kind: "doc"` — shown to the team, never counted as evidence.
 
-**There is no Partial.** A feature that is built but mocked, gated or one-sided is Built **plus an open `task`** (or a `bug`, if it contradicts a decision) naming what's missing. That item carries a title, an owner and closure evidence — strictly more than a flag ever did — and a later sync closes it on that evidence. A node carries **no certainty field at all** — "how sure are we?" is read off its open discourse, so an unsettled node carries an open question rather than a grade you type.
+**There is no Partial.** A feature that is built but mocked, gated or one-sided is Built **plus an open `task`** (or a `bug`, if it contradicts a decision) naming what's missing. That item carries a title, an owner and closure evidence — strictly more than a flag ever did — and a later sync closes it on that evidence.
 
 ## How this skill reaches Aporia
 
@@ -47,7 +47,7 @@ Tools: `aporia:pull_constitution` (ground), `aporia:search_graph` / `aporia:pull
 
 ## Workflow
 
-Copy this checklist into your response and check off each phase:
+The phases, in order:
 
 ```
 Sync progress:
@@ -65,7 +65,7 @@ Sync progress:
 
 ### Phase 0 — Ground
 
-`aporia:pull_constitution` for the invariants — its `canonicalRef` also tells you up front which run this is: declared while your checkout is off it (or dirty) ⇒ a **gated preview run** (scans force-preview, resolves attest — Phases 4/6); `null` ⇒ no gate (scans apply, resolves close). For each scope the diff touches, `aporia:search_graph { keyPrefix }` (or `{ group }`) to load what's already mapped, and `aporia:pull_context { key }` on the touched features to see their **current bindings (edges) and authored intent/notes** — so you realize and refresh in place instead of duplicating, and never overwrite an authored *why*. (The derived Implementation level itself isn't in `pull_context` — read it from `aporia:feature_gaps_spec { key }` when you need it.)
+`aporia:pull_constitution` for the invariants — its `canonicalRef` also tells you up front which run this is: declared while your checkout is off it (or dirty) ⇒ a **gated preview run** (scans force-preview, resolves attest — Phases 4/6); `null` ⇒ no gate (scans apply, resolves close). For each scope the diff touches, `aporia:search_graph { keyPrefix }` (or `{ group }`) to load what's already mapped, and `aporia:pull_context { key }` on the touched features to see their **current bindings (edges) and authored intent/notes** — so you realize and refresh in place instead of duplicating, and never overwrite an authored *why*. (Whether a feature currently reads Built isn't in `pull_context` — `aporia:feature_gaps_spec { key }` returns it.)
 
 **Mint the run's identity once, up front:**
 
@@ -100,11 +100,11 @@ You don't write a grade — you report the **evidence** and the **bindings** hon
 - an `intended` (planned) feature the code now implements → report it as_built (omit `planned`) with its own `externalRefs` of kind `code`, plus its structure and edges — the scan realizes it (intended → as_built) and it reads Built;
 - a feature whose real logic **replaced a mock** this PR → the task that named that mock is now done. If it is sync-watched, resolve it in Phase 6 (`aporia:resolve_items`, citing the landed code); if it is a teammate's to close, resolve it anyway — the scan **attests** it with your evidence rather than closing it, and the human confirms in one click.
 
-Never report an unbuilt surface as `as_built`, and never try to raise a feature by writing a grade — the level is read from the structure you can cite.
+Never report an unbuilt surface as `as_built`.
 
 ### Phase 4 — Push with `aporia:apply_scan`
 
-Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` only on the final page **of each scope** (so the sweep is scoped to what you actually re-scanned). Pass the **same `sessionId`** (from Phase 0) and `observed` on **every** page of **every** scope. Hold that one `sessionId`: **omitting** it lets the final `completeScope` page tombstone the earlier pages of the very same run (the legacy pagination trap), while **switching** sessionIds mid-run trips the race guard into a `CONFLICT` — either way the run fails its own pagination. `data.type` MUST equal `type`. Same shapes and key formats as onboarding Phase 6. Check the response: `skippedEdges: 0` (or understand each), and the `removed`/`removedEdges` **counts** match exactly the code the PR deleted (they are counts — `dryRun`'s `wouldRemoveKeys` is what names the keys). A heavy sync can hit `RATE_LIMITED` — wait the returned `retryAfter`, then retry the same call.
+Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` only on the final page **of each scope** (so the sweep is scoped to what you actually re-scanned). Pass the **same `sessionId`** (from Phase 0) and `observed` on **every** page of **every** scope. Hold that one `sessionId`: **omitting** it lets the final `completeScope` page tombstone the earlier pages of the very same run, while **switching** sessionIds mid-run trips the race guard into a `CONFLICT` — either way the run fails its own pagination. `data.type` MUST equal `type`. Same shapes and key formats as onboarding Phase 6. Check the response: `skippedEdges: 0` (or understand each), and the `removed`/`removedEdges` **counts** match exactly the code the PR deleted (they are counts — `dryRun`'s `wouldRemoveKeys` is what names the keys). A heavy sync can hit `RATE_LIMITED` — wait the returned `retryAfter`, then retry the same call.
 
 **If `apply_scan` returns a `CONFLICT`:** another sync is sweeping this same scope right now (a `completeScope` under a *different* sessionId, seen within the last ~10 minutes). Do **not** work around it — either **re-run the whole scope under one fresh `sessionId`** (so all its pages agree), or **wait for the other sweep to finish**, then retry. A CONFLICT means two runs are racing; it is never resolved by changing anything but the timing or the sessionId.
 
@@ -127,7 +127,7 @@ Push **per touched scope**, ≤200 nodes+edges per call, `completeScope: true` o
 
 **A capture is not inbox debt — the run that mints it settles it.** The scan you just pushed holds the capture's evidence: hand the `shortId` that `record_notes` returned to Phase 6, where the code that carries its verdict resolves it in the same call as everything else. It lands on the node as a settled choice with its rationale — which is the whole point of a post-merge capture — instead of another open triage row. A run that mints a decision about built code and leaves it open, worse still aimed at a node the same run left `intended`, has manufactured stale triage, not memory. And when the code carries the verdict only partly, neither resolve nor walk away: Phase 6's partial-carry path is the honest landing.
 
-Never invent rationale, and never re-author intent — if the *why* of a change wasn't stated, it's a question for the team, not a decision. (`blocksImplementation` is deprecated — the server accepts and ignores it. File the task instead.)
+Never invent rationale, and never re-author intent — if the *why* of a change wasn't stated, it's a question for the team, not a decision.
 
 ### Phase 5b — Premise check (flag, never close)
 
@@ -162,7 +162,7 @@ Resolving on majority evidence closes work that isn't done; saying nothing stran
 
 The response reports per-item outcomes `{ resolved, reopened, attested, released, skipped }`.
 
-**The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not) — with the PR link when you attached `pullRequest`. That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. **A scan attests what it cannot close.** The same `attested` outcome covers the other way authority can be missing: an item whose KIND is a human's to close (a task). Do **not** withhold a `resolve` because you lack the authority — cite the evidence and let the server decide. It stamps an `awaiting: "confirm"` attestation, the item stays open, and the human closes it in one click with your reasoning already attached. Withholding is how evidence dies: a task proven by a scan and never attested sat open six days with a comment saying it had shipped. Never close an item whose evidence you didn't actually scan this run — but never drop evidence you did.
+**The `attested` outcome — the pre-merge half of the close.** Just like the scan gate above, a `resolve` you run **off the canonical ref** (a branch, pre-merge) does **not** close the item — it **attests** it: the fix is proven in the branch's code but not yet on the trunk, so the item stays **open** carrying a *"fix ready — awaiting merge"* attestation (its `attested` count goes up, `resolved` does not) — with the PR link when you attached `pullRequest`. That badge is honest — the work is done but unmerged — and it clears automatically when the **post-merge canonical sync** runs the same `resolve` **on the canonical ref**, which finally closes the item (`resolved`) and drops the attestation. So the full close is two syncs: attest on the branch, close on the trunk. **A scan attests what it cannot close.** The same `attested` outcome covers the other way authority can be missing: an item whose KIND is a human's to close (a task). Do **not** withhold a `resolve` because you lack the authority — cite the evidence and let the server decide. It stamps an `awaiting: "confirm"` attestation, the item stays open, and the human closes it in one click with your reasoning already attached. Never close an item whose evidence you didn't actually scan this run — but never drop evidence you did.
 
 ## Acceptance checklist
 

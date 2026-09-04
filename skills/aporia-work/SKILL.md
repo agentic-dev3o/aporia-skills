@@ -25,7 +25,7 @@ You reach Aporia through the **MCP server only** (pinned to one product; call to
 
 ## Workflow
 
-Copy this checklist into your response:
+The phases, in order:
 
 ```
 Work progress:

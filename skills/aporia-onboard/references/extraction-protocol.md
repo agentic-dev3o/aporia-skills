@@ -38,7 +38,7 @@ Every extraction is one of two things; conflating them is the root of slop:
 
 Your entire value is the interpretation — clustering, naming, dropping, inferring. Serializing the AST produces slop by construction. **Judge.**
 
-**Confidence lives on AUTHORED intent only.** A scanned node — observation or interpretation — carries **no stored confidence**; how sure you are of a *name* or a *cluster* is expressed through the evidence you cite, a note when it's genuinely ambiguous, or choosing to author it as `planned` (intent, not asserted structure) — never a grade stamped on scanned structure. There is no longer anywhere a node's `confidence` is stored: `apply_scan` accepts the field and ignores it, so an unsettled node carries an open question instead of a grade. And whether a feature is *built* is not confidence at all: it is **Built, derived server-side and binary — `as_built` AND at least one `externalRef` of kind `code`** (D4) — nothing you write into a field can raise it.
+**How sure you are is expressed through evidence, not a field.** Your certainty about a *name* or a *cluster* shows in the evidence you cite, in a `question` note when it's genuinely ambiguous, or in authoring it as `planned` (intent, not asserted structure). Whether a feature is *built* is a separate question with a binary answer: **Built means `as_built` AND at least one `externalRef` of kind `code`** (D4), derived server-side from what you report.
 
 > **The hard line: report structure with evidence; never fabricate intent — elicit it.** The *why*, the success criterion, the persona served are not in the code. Where they aren't observable, you **ask** (Phase 5); you do not invent.
 
@@ -114,7 +114,7 @@ You may read the repo's own README/PRDs/`docs/` to enrich proposals before askin
 |---|---|---|
 | Produces | `as_built` **structure** | `intended` **intent** |
 | Method | observe, then interpret with evidence | draft, then elicit and confirm |
-| Realization / confidence | **Built** derived from the node's own `state` + its `externalRefs` of kind `code` — **no stored grade**, no middle rung | a node stores no `confidence` at all; `apply_scan` ignores the field, and doubt is an open question |
+| Realization | **Built** derived from the node's own `state` + its `externalRefs` of kind `code` — binary, no middle rung | doubt is an open `question`, never a field |
 | Never does | fabricate intent | invent structure the code doesn't have |
 
 Structure flows from the code; intent flows from the team. The map's honesty is that the two are kept distinct and bound by `key`, not smeared together.

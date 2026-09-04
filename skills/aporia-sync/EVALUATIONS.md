@@ -198,7 +198,7 @@ modes these scenarios exist to catch (each maps to the skill's anti-pattern list
   entity's field list is code-owned even on an authored node), but it is all-or-nothing:
   send the complete current list, or carry the mapped one forward verbatim.
 - **Overwriting authored intent or inventing rationale.** Sync touches as-built structure
-  and the derived Implementation level only — it preserves the authored *why* verbatim and
+  and the derived Built state only — it preserves the authored *why* verbatim and
   raises a genuinely new unknown as a question, never a fabricated decision.
 - **A capture left as debt.** Post-merge decision capture exists to keep the *why* of what
   merged; a captured decision the code fully carries that is not settled by the same run's

@@ -47,7 +47,7 @@ There is **no client-supplied id** — Convex assigns it. To refine or retire a 
 
 ## How to run it
 
-The interview is stateful — copy this checklist and check off each section as you go, so you neither skip a field nor push a half-mapped persona:
+The interview covers every section before the write — a half-mapped persona is never pushed:
 
 ```
 Persona mapping:
