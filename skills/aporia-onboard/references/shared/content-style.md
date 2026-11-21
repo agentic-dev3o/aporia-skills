@@ -1,97 +1,84 @@
-<!-- generated from shared/content-style.md — edit the source, run bun skills:materialize -->
+<!-- generated from shared/content-style.md: edit the source, run bun skills:materialize -->
 
-# Content style — proportionality for the living map
+# Content style: write for where the words land
 
-Aporia's bet is that **humans interpret complex state visually**. The map reads as a drill-down — the canvas of node chips, then a row in a list, then a dedicated page — and every string an agent writes becomes typography at one of those depths: a label, a headline, a line, or prose. Text written for the wrong depth breaks the map: a sentence crammed into a title truncates mid-word in every row; a wall of prose buries its own claim; headings wrapped around three sentences read as bureaucracy. **Write for the surface the words will land on, and when in doubt go shorter** — map text is read a hundred times for every time it is written.
+Everything an agent writes into Aporia is read by a team, many times, in a list, on a card or in a feed. Text written for the wrong place breaks it: a sentence crammed into a title wraps in every row, a wall of prose buries its own claim. The next agent reads it too, as the truth about the product, and builds on it. **Write for the surface the words land on, and when in doubt go shorter.**
 
-This is the contract for *how* text is shaped; the skill that sent you here says *which* fields and *when*. The note title is the machine bound you'll actually hit (≤60 chars, **rejected**, never truncated; bodies and rationales cap at 5000); every other shape is a target you hold yourself to.
+This is the contract for how text is shaped. The skill that sent you here says which fields to write, and when.
 
 ## The proportionality table
 
-| You are writing | It renders as | Shape |
+| You are writing | It is read as | Shape |
 |---|---|---|
-| node `name` | a label among hundreds on the canvas | 1–4-word domain noun the team says — "Invoice", "Product Memory" |
-| node `summary` | one line on a card / hover | one sentence: what it is |
-| feature `intent` | the Intent panel | 1–3 markdown sentences: the why, and for whom |
-| `successCriteria[]` | checklist rows | one testable line each |
-| note `title` | a bold row in the inbox / feed | **≤60-char plain-text headline** naming the claim |
-| note `body` | the note detail | markdown prose — a lead sentence, then structure only if there are parts |
-| note `rationale` | the RATIONALE aside | one tight paragraph: the why |
-| persona `name` | a chip | 2–5-word handle anchored in role + situation |
-| persona `situation` | the dossier portrait | 2–5-sentence JTBD narrative, light emphasis, no headings |
-| principle `statement` | a law in a list | one testable sentence, plain |
-| principle `rationale` | under the law | 1–2 markdown sentences tying it to the bet |
-| thesis `product` / `problem.statement` | the footer band | plain sentences, ≤1024 chars each |
-| thesis `shift` / `whyNow` / `endState` | a numbered card | ONE claim with the context it needs, plain prose, ≤1024 chars |
-| thesis `bet` | the highlighted card | the falsifiable claim, ≤1024 chars |
-| thesis `falsifiedIf` | the falsifier strip | what would prove the bet wrong, ≤1024 chars |
-| process `name` | the swimlane title | 2–4 words naming the flow |
-| process lane label | a swimlane header | 1–3 words |
-| process step label | a box on the canvas | 2–5 words, verb-first |
-| flow `label` / `branch` | an edge tag | 1–3 words / a one-word guard |
+| task `title` | a card on the board | a short headline naming the work, verb first: "Persist the coupon on the order" |
+| task `summary` | "In short", on the open task | one or two sentences: what, and why |
+| task `body` | the open task | markdown: a lead sentence, then structure only if there are parts |
+| report `summary` | one line of Activity | what was done, in one or two sentences a teammate understands without the diff |
+| report `body` | the room of the task | what changed, what was verified, what is left, what a human should read |
+| specification `name` | a row of the list | one to four words the team says for a system of the product, not a screen: "Checkout", "Task system" |
+| specification `key` | what an agent names | `domain.key`, lowercase, stable: `commerce.checkout` |
+| `intention` | the top of the specification | one to three sentences: why the feature exists, and for whom |
+| specification `body` | "Details", under the intention | optional markdown: how the system works (its records, its states, a table of cases). Never a criterion or a rule, never the why, never the news of a session |
+| clause `text` | a numbered line | ONE sentence a feature can pass or break |
+| clause `body` | under the line | the detail, only when the sentence needs it |
+| schema step `title` | a box of the drawing | two to five words, verb first, its lane as the subject |
+| schema step `detail` | behind the box, when the reader points at it | one sentence, only when the title is not enough |
+| schema lane `label` | the head of a column | one to three words |
+| schema flow `label` | on an arrow | one or two words that name a branch |
+| persona `name` | a card of Vision | two to five words anchored in a role and a situation |
+| persona line (`when`, `today`, `want`, `soThat`, `obstacle`) | one line of the "Situation" block | one plain sentence each |
+| idea `text` | a source, quoted | the words as they were given, untouched |
+| session note `title` | one line of a session card | one plain sentence: what was decided or found |
+| session note `body` | under the line | the why, in a sentence or two |
+| architecture node `title` | a card of the diagram | the name the team uses, sixteen characters at most: "API", "Job queue" |
+| architecture node `summary` | the second line of the card | two or three words: "7 pools", "One writer" |
+| architecture node `description` | the panel under the diagram | what it does, then the choice or the limit to know, in two or three sentences |
+| architecture zone `note` | one line under a frame | one sentence: "Called by the API and the workers" |
+| architecture edge `label` | a word on an arrow | one to three words: "HTTPS", "webhook" |
 
 ## Punctuation and syntax
 
-These bind every string you write into the map, and the MCP server states them too. A clause held inside dashes reads as an aside the writer could not place. Make it its own sentence and it becomes a claim the team can agree or disagree with, which is the whole job here.
+These bind every string you write, and the MCP server states them too.
 
-1. Avoid em-dashes entirely. Use a period, a comma, or parentheses instead.
-2. Avoid overusing semicolons or colons to connect independent clauses.
-3. Keep sentences simple and direct. Vary sentence lengths naturally.
-4. If a sentence contains more than one parenthetical thought, split it into two separate sentences.
+1. No em-dashes. Use a period, a comma, or parentheses.
+2. Do not chain independent clauses with semicolons or colons. A colon before a list, an example or a quoted value is fine.
+3. Keep sentences simple and direct. Vary their length naturally.
+4. One claim per sentence. A sentence holding two parenthetical thoughts is two sentences.
 
-Bad: `"code-connection—not visual modeling alone—is the thesis's non-obvious centre."`
-Good: `"code-connection is the thesis's non-obvious centre. Visual modeling alone is not enough."`
+Bad: `"The coupon (a percentage, never an amount) is applied once (per buyer, not per order)."`
+Good: `"A coupon is a percentage. It is applied once per buyer."`
 
-The rule applies to the examples in this file and in every skill, not just to your own prose. A template you copy is a style you inherit.
+A template you copy is a style you inherit: the rule applies to the examples in every skill too.
 
-## The title — a headline, not a sentence
+## A title is a headline
 
-The `title` names the claim the way a commit subject names a change; the body IS the claim.
+- **Plain text.** No markdown, no trailing period, no "Task:" prefix.
+- **Timeless.** No status ("WIP", "SHIPPED"), no pull request number, no branch name. Git holds history, Aporia holds meaning.
+- **It names the thing.** If it does not fit, you are writing a sentence: cut to the claim and move the rest to the body.
 
-- **≤60 characters, enforced by rejection** — an over-length title fails the whole write (never truncated). If it doesn't fit, you're writing a sentence: cut to the noun phrase and move the substance into the body.
-- **Plain text** — no markdown, no trailing period, no "Decision:" prefix.
-- **Match the kind** — a question titles as a question ("Partial refunds: reopen or credit note?"); a decision as the choice made, one that finishes when the code lands ("Refunds spawn a credit note, never a reopen"); a rule as the law it states, still binding in two years ("Invoices are immutable once issued"); a tension names the conflict ("Money math: UI vs Billing service").
-- **Timeless** — no status narration ("SHIPPED", "WIP"), no PR numbers or branch names. Git holds history; the map holds meaning.
+## A clause is a law, not a comment
 
-## The body — markdown at reading distance
+A criterion says what must be true to call the feature done. A rule says what always holds. Both are read as a test: someone points at the product and says "this breaks it" or "this passes".
 
-- **Lead with one sentence that states the whole claim** — never an echo of the title. The UI stacks title over body; an echo makes the human read everything twice.
-- **Structure carries parts, not prestige.** Use `##` sections and bullets when the content has real parts (zones, steps, options); a two-sentence body stays two sentences. The wall and the padded outline are both disproportion.
-- **Bold the load-bearing terms**; *italicize a quoted stance*. Name code facts precisely (paths, symbols, the mock, the `TODO`) — and drop the narration around them.
-- **Timeless voice** — state the decision / question / tension itself, not the session news ("we just", "in this PR", "now"). The note outlives the session that wrote it.
+- One sentence, in the present tense: "A code is used once per buyer."
+- No "should", no "ideally", no implementation detail that will change next month.
+- If it finishes when the code lands, it is a task, not a clause.
 
-A decision's `rationale` is the why in one tight paragraph. If the why doesn't fit a paragraph, it isn't understood yet — record a `question` instead.
+## A body is markdown at reading distance
 
-## Anti-patterns (each observed on a real map)
+- Lead with one sentence that states the whole claim. Never repeat the title.
+- Structure carries parts, not prestige: sections and bullets when there are real parts, two sentences when there are two sentences.
+- Name code facts precisely (a path, a symbol, the test that proves it) and drop the narration around them.
+- Write the state of things, not the news of the session ("we just", "in this PR", "now").
 
-- **The sentence-title** — the whole decision crammed into `title`, truncating mid-word in every row.
-- **The echo** — the body's first line repeats the title.
-- **The status report** — "SHIPPED (PR #27, branch feat/…): …" — provenance narrated as meaning.
-- **The wall** — eight flat lines with three claims buried inside.
-- **The padded dossier** — headings wrapped around three sentences to look thorough.
+## Write only what you checked
 
-## Before → after
+Writing costs you little. Reading costs the team, every time. A claim earns that cost only when you checked it.
 
-✗ What the map showed:
+- A verified claim names its proof: the test that passes, the page you opened, the query you ran.
+- A claim you did not check is marked as such ("Not verified: refunds."), or it is cut.
+- A guess stays a guess. It never becomes a fact because the sentence reads well.
 
-```
-title: "SHIPPED (PR #27, branch feat/prose-editor): the reusable inline
-        DescriptionEditor (Tiptap, markdown-string API) in @aporia/web-ui, wired acr…"
-body:   the same sentence again, then five more flat lines
-```
+## The language
 
-✓ The same decision, proportioned:
-
-```jsonc
-{ "kind": "decision",
-  "title": "One inline DescriptionEditor for all rich text",
-  "body": "Every rich-text surface shares the inline **DescriptionEditor** (markdown-string API). The rendered content IS the editing surface, no edit mode.\n\n## Wired across\n- Inbox note detail\n- Node page (feature intent)\n- Personas dossier (situation)",
-  "rationale": "One editor keeps humans and agents on a single markdown body and drops into the existing string-based autosave." }
-```
-
-## Checklist
-
-- [ ] Title ≤60, plain, names the claim — no status prefix, PR number, or trailing period.
-- [ ] Body leads with the claim (no title echo); sections only where there are real parts.
-- [ ] Rationale is one paragraph.
-- [ ] Every other field matches its row in the table; when in doubt, shorter.
+Write into Aporia in the content language of the product: `contentLanguage`, which a work order (`aporia:get_task`, `aporia:take_task`) and `aporia:get_context` both return (`fr` is French, `en` is English). It is the language the team reads its product in, whoever speaks to you and whatever language the code is in. Talk to the human in their own language.

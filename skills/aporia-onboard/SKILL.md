@@ -1,183 +1,170 @@
 ---
 name: aporia-onboard
+disable-model-invocation: true
 description: >-
-  Onboards a codebase into Aporia's living map through the Aporia MCP server —
-  the one-time deep scan that becomes a graph a founder recognizes in 30 seconds.
-  Grounds on the product Constitution first (an empty thesis / personas /
-  principles is authored WITH the human before scanning), distills the repo into
-  domain entities, components, and features with cited evidence, elicits the
-  intent the code can't show, and pushes with aporia:apply_scan. Use when
-  onboarding a repo into Aporia, scanning code into the map, bootstrapping the
-  product graph, defining the thesis, personas, and principles, or running the
-  first as-built scan of an existing codebase. For the per-PR re-scan of an
-  already-mapped product, use aporia-sync instead.
+  Onboards a product into Aporia from its repository: reads the code for the
+  major systems the product is made of (a task system, billing, a connector, an
+  assistant), proposes one specification per system with its key, its domain,
+  whether it is in the product or planned, and its first criteria and rules,
+  has the human read and correct the list, then writes it with
+  aporia:create_specs. Screens, views and sub-features are folded into the
+  system they belong to, never specified on their own. Every intention arrives
+  unsigned for a human to sign. Use for /aporia-onboard, onboarding a
+  repository into Aporia, creating the first specifications of a product, or
+  starting a product that has none. To draw the architecture, use
+  aporia-architecture-scan.
 ---
 
-# Aporia onboarding scan
+# Aporia onboarding
 
-You are turning a codebase into a product **map a founder would recognize** — not a UML dump. The data model is trivial; the value is entirely in *what you choose to put in the map*. This skill is the **process**; [references/extraction-protocol.md](references/extraction-protocol.md) is the **contract** — re-read it every run.
+A new product in Aporia has no specification: nothing says what each part of the product is for, and no task has a contract to serve. This skill writes the first specifications from the repository, **with the human**: the code shows what exists, only a person says why it exists.
 
-## The bar (hold throughout)
+Run it once per product. It can be run again safely: a specification whose key already exists is skipped.
 
-A scan passes only if **(1)** a founder shown the result says *"yes, that's my product"* within 30s, and **(2)** an engineer could use it to find where to make a change. 300 plumbing nodes fail (1); five vague boxes fail (2). The grain that passes both is the target.
+You reach Aporia through the **MCP server only**, pinned to one product. Call its tools fully qualified, as `aporia:*`. If the tools are not available, stop and ask the user to connect the Aporia MCP server.
 
-The one hard line: **report structure with evidence; never fabricate intent — elicit it.** The *why*, the success criteria, the persona served are not in the code — where they aren't observable you **ASK** (Phase 5), you do not invent.
+**A question to the human goes through the tool your agent has for asking one** (`AskUserQuestion` in Claude Code): one decision per question, with the answers you expect as its options. A question written in the middle of a message gets lost. Without such a tool, or when nobody is there to answer (a scheduled run), the questions close your message, numbered, one decision each.
 
-## How this skill reaches Aporia
+**`aporia:create_specs` is not among your tools?** The Aporia server was added with `?tools=work`, the profile of a coding session, which leaves it out. Ask the human to add the server again without `?tools=work`, then start over.
 
-Through the **Aporia MCP server only**. The server is pinned to one product and derives the org from its API key, so you never have to pass a product id or org; you just call the tools. Call them **fully-qualified as tools of the `aporia` MCP server** (e.g. `aporia:pull_constitution`) so they resolve even when other MCP servers are connected. If the MCP tools aren't available, stop and tell the user to configure the Aporia MCP server (`APORIA_API_KEY` + `APORIA_PRODUCT_ID`) first.
+## The bar
 
-Tools you'll use: `aporia:pull_constitution` (ground), `aporia:fetch_personas` / `aporia:fetch_principles` / `aporia:upsert_thesis` / `aporia:upsert_personas` / `aporia:upsert_principles` / `aporia:fetch_design_tokens` / `aporia:upsert_design_tokens` (author the Constitution when it's empty), `aporia:search_graph` (see what's mapped), `aporia:apply_scan` (push structure + proposed features), `aporia:record_notes` (capture the elicited why).
+- **A specification is a major system of the product.** It is the technical and functional contract of one component a new teammate must understand before touching it: the records it holds, the states they move through, what it refuses, what it exchanges with the rest. "Checkout", "Task system", "GitHub connector", "AI assistant". Most products hold five to twelve.
+- **A screen, a view or a sub-feature is a part of a system, never a specification.** A board and a list over the same tasks are two views of one task system. Labels, dependencies and the order of a column are parts of it. A part lands in its system as a clause or as a word of its summary.
+- **The code shows what, never why.** You draft an intention as a guess the human confirms or rewords. You never write one they did not confirm. Every intention arrives **unsigned**, and a human signs it in Aporia.
+- **A clause is a law.** A criterion says what must be true to call the system done, a rule says what always holds. Write the few the code makes certain. A guess is not a clause.
+- **Nothing is written before the human read it.** You propose the whole list, they correct it, then you write.
 
 ## Workflow
 
-The phases, in order:
-
 ```
-Scan progress:
-- [ ] Phase 0 — Ground the Constitution: aporia:pull_constitution; if the thesis/personas/principles are empty (or misaligned), DEFINE them WITH the human (aporia:upsert_thesis + the aporia-persona-mapper interview + aporia:upsert_principles) BEFORE scanning; then aporia:search_graph per scope
-- [ ] Phase 1 — Scope: split the repo into the subsystems the team thinks in
-- [ ] Phase 2 — Inventory: raw facts per scope (high recall, no judgement)
-- [ ] Phase 3 — Distill: apply D1–D4 + D6 (plumbing filter, grain, language, evidence, legibility)
-- [ ] Phase 4 — Propose features; run the Realization Probe → structure as_built + missing-side tasks / planned (D5)
-- [ ] Phase 5 — Elicit the why from the human (draft-first)
-- [ ] Phase 6 — aporia:apply_scan per scope (one sessionId + observed on every page; completeScope on the final page)
-- [ ] Phase 7 — aporia:record_notes: the elicited decisions, questions, tensions
+Onboarding progress:
+- [ ] Phase 0: load the context, stop on an unframed vision
+- [ ] Phase 1: find the systems in the repository
+- [ ] Phase 2: draft one specification per system
+- [ ] Phase 3: validate the list with the human
+- [ ] Phase 4: write the specifications (aporia:create_specs)
+- [ ] Phase 5: hand off
 ```
 
-### Phase 0 — Ground the Constitution (Ring 0 first)
+### Phase 0: context
 
-Call `aporia:pull_constitution` → the product's `thesis`, `principles`, and `personas` (each persona carries an `id` — a feature's `relatedPersonaIds` uses those ids, never names). The Constitution is the **ground the scan stands on**: every feature is graded and bound against it (D4/D5), so scanning onto an empty or wrong Constitution produces a map with nothing to anchor to. **Establish it before Phase 1** — and like the rest of this skill, author it **WITH the human, never from the code**:
+`aporia:get_context` once. Keep `specUrl`, the link template of a specification, for the hand-off. Read the vision: every specification you propose serves it. Read the `personas` too: they are who the systems are for.
 
-- **Thesis — elicit the BET, don't grade the problem.** If `thesis` is null/empty, run a short, conversational interview (reflect each answer back before the write), then write it with `aporia:upsert_thesis`:
-  1. `product` — what is it, who's it for, and the **wedge** (what it does that's different)? One or two sentences.
-  2. `problem.statement` — the problem it attacks, stated once and concretely (the moment it bites) — not graded.
-  3. The **argument**, as four short parts, one claim each — `shift` (what changed in the world) → `bet` (**the non-obvious thing the founder believes that makes this win** — the centre, a claim they could be wrong about, never a feature list or a restatement of the problem) → `whyNow` (why this moment, not two years ago) → `endState` (what winning unlocks). If they can't name the bet yet, that gap *is* the finding — surface it; never invent one.
-  4. `falsifiedIf` — **what would prove the bet wrong.** A thesis that cannot name its own falsifier isn't a bet, it's a slogan. Ask for it in the same breath as the bet.
+**An unframed vision stops the onboarding.** `visionFramed` says it: it is false until the vision has both its purpose and its bet. The code shows what the product does, never who it is for or what it bets on, so without a framed vision you have nothing to sort the systems against. Before you read the repository, tell the human the vision is not framed and ask them to open `product.visionUrl` and use **Frame the vision** there, where the assistant helps them word it. Never give an invented link (when it is null, name the Vision page of the product). You do not write it for them, and you do not draft it from the code. Then wait. Start again from `aporia:get_context` once they say it is done. Only the human's own "go on without it" lets you continue, and when nobody answers you stop here.
 
-  Every part is **length-capped at 1024 chars and rejected over-length, never truncated**. The cap is a ceiling against a run-on, not a word budget: give each part the context its claim needs, but keep it ONE claim, so a part that doesn't fit is two claims wearing one field — split it or cut it ([content-style](references/shared/content-style.md)). A thesis carries no confidence grade and no lifecycle status: how sure the team is, is answered by whether `falsifiedIf` has fired, not by a field. **Do not ask _painful / urgent / recognized_ here** — DUR is a **challenge** lens (does the problem hold up?), applied when the in-app Assistant pressure-tests the thesis in a session, not a scan's lead question. Grading the problem before the bet is even stated is the rubric that makes a thesis feel hollow; it also just re-asks what persona `painSeverity` already captures, better, from a concrete situation. If a thesis already EXISTS but has drifted, **refine** it: `aporia:upsert_thesis` partial-merges, so one field moves without restating the rest.
-- **Personas.** If `personas` is empty or under-mapped, author them WITH the human via the **aporia-persona-mapper** skill — the Socratic role → situation → painSeverity interview, written with `aporia:upsert_personas`. Don't duplicate that interview here; run that skill. If personas exist but are misaligned, refine them (pass the `id` from `aporia:fetch_personas`). Once they exist, you may link the personas who *have* the problem onto the thesis via `aporia:upsert_thesis { personaIds }`.
-- **Principles.** If `principles` are empty (or don't trace to the bet), author **3–5** WITH the human and write them via `aporia:upsert_principles` (read what exists first with `aporia:fetch_principles`; refine/retire by `id` rather than cloning). A principle is a **testable guardrail that operationalizes the thesis-bet** — a product-wide law you can hold a feature against and say *"this violates it."* It must be product-specific, falsifiable, and trace to the `bet`; each carries a `statement` + a `rationale` (why it matters, tied to the bet). Keep the `statement` one crisp, testable sentence (the law itself — not markdown-structured); write the `rationale` as tight **markdown** prose ([content-style](references/shared/content-style.md)). **Reject platitudes** ("be user-centric", "keep it simple") — those aren't principles. And don't confuse a principle with a node-scoped Rule (`record_notes` kind `rule`): a principle is one of the few *foundational* laws, not emergent discourse.
-- **Design tokens.** If the product has a real UI, read what's there with `aporia:fetch_design_tokens` and write it with `aporia:upsert_design_tokens`. These are the tokens of **the product being onboarded**, never Aporia's own theme, and they are **authored, never derived**: a role holds one value per appearance (`light` and `dark`), entered directly, because most palettes are not derivable from two or three inputs. Take them from what the repo already ships — its stylesheet, its theme config — rather than inventing a palette; that is one of the few Constitution facts the code CAN tell you. `roles` and `states` are sent as the **whole ordered list** and replace that group wholesale, so fetch first, edit the array you got back, and send it whole: sending one role alone drops the rest. Order is meaningful (surfaces, then the hairline, then the ink, then the hued roles), so the palette reads as a ramp. The read side emits ONE generic stylesheet of plain custom properties, both appearances together — Aporia ships no per-framework adapters, because which role fills which slot and which file it lands in are per-repo facts it would be guessing at. A coding agent maps it into the repo's own idiom.
-- **The floor.** At minimum get the one-sentence `product` + the core `problem` so features have something real to bind to. If the human genuinely can't articulate the thesis yet, that is itself the finding — surface it (it's the work the from-scratch Assistant session exists to do) rather than inventing one. **An empty Constitution is filled, not skipped; and never fabricated from the code.**
+`aporia:list_specs` tells you what already exists. On a product that already has specifications, propose only the systems they do not cover. To bring existing specifications up to date (merge, retire, move their clauses), use aporia-spec-update instead.
 
-The `aporia:pull_constitution` response also carries `canonicalRef` — if it's declared and your checkout is off it (or dirty), **stop before scanning**: every push would be force-previewed and write nothing (Phase 6). Onboard from the canonical ref on a clean tree.
+The first write returns a `sessionId`: pass it on every later write.
 
-Then, for each scope you're about to scan, call `aporia:search_graph { keyPrefix }` (or `{ group }`) to see what's already mapped, so a re-scan converges instead of duplicating.
+### Phase 1: find the systems in the repository
 
-### Phase 1 — Scope
+Read for the systems the product is made of, not for its screens. In this order:
 
-Split the repo into the **scopes the team thinks in** — a package, a bounded context, a service (e.g. `pim`, `indexing`, `billing`, `admin`). Each becomes a `scopeKey`, scanned and pushed independently with `completeScope: true` on its final page so its tombstone sweep is correct. Never scan the whole repo as one blob.
+1. **the data model and the server modules.** Records that live and change together, with their own states (a status, a lifecycle), make one system. A module folder is a strong hint, not a rule: two folders serving the same records are one system, and a folder of shared helpers is none. Code kept only for a migration or a retired version is not a system: you name it once, as a group, among what you left out;
+2. **what talks to the outside**: connectors, webhooks, sync jobs, a public API or an MCP server, a model provider. A sync with an outside service is usually a system of its own, with everything that keeps it running (its keys, its jobs, its webhook);
+3. **the README and the pages that present the product**: they give the team's own names for these systems;
+4. **the navigation**: the menu, the route table, the commands. Attach each screen to the system whose records it shows. A screen is never a candidate on its own. A screen whose records belong to no system you found points to a system you missed;
+5. **the names of the tests**: they say what each system guarantees, and they become its clauses.
 
-### Phase 2 — Inventory (observation, high recall, no judgement)
+Stop when every module and every screen has a home. You name a system from its records, its screens and its tests: you do not need to read its code line by line.
 
-Per scope, gather raw facts — do not filter yet: schema/model/table definitions (entities); modules, services, packages, deploy units, UI surfaces (components); which module owns which entity; module→module dependencies; entity→entity relations (FKs/refs). Also name the scope's **entry surfaces** (screens, API routes, webhooks, crons — what the outside world invokes) and its **externals** (vendors/APIs it depends on but doesn't own) — D6's rails; a scope with zero entries is a smell.
+### Phase 2: draft one specification per system
 
-### Phase 3 — Distill (interpretation — this is the whole job)
+**Group first, then name.** Start from the systems of Phase 1 and give everything else a home in one of them:
 
-Apply the five structural disciplines — D5 (intent) is Phase 4 (full text in the reference):
-- **D1 Plumbing filter** — keep only what a non-engineer would call "part of my product." Drop DTOs, config, utils, adapters, generic CRUD, fixtures, scaffolding.
-- **D2 Grain** — Entity = aggregate root; Component = meaningful module; Feature = slice of user value. **> ~30 nodes of one type in a scope ⇒ you're too fine; recluster.**
-- **D3 Domain language** — name things what the team *says* (UI strings → routes → API → comments → README → identifiers last). `tbl_inv_ln` → "Invoice Line".
-- **D6 Architecture legibility** — every component's `componentKind` follows the reference's decision table (`ui` = human screen · `trigger` = machine-invocable route/webhook/cron · `agent` = LLM loop with tools · `tool` = capability bundle an agent calls · `service`/`store`/`external`/`module`); every `depends_on` edge carries a ≤4-word verb `label` stating what crosses it ("mints Convex JWT", "gated: ENABLE_V4"); a component's `data.sub` is its evidence-backed signature line ("POST /api/chat", "ToolLoopAgent · 30 steps") — concrete numbers over adjectives, models never as nodes; an `external`'s `data.domain` names the vendor ("clerk.com"); lifecycle rides the group name ("NOA v3 (legacy)"); a risky external (unofficial API, deprecated SDK) gets a `tension` note.
-- **D4 Evidence, honest structure** — every node cites `externalRefs`; nothing ungrounded, never a claim you can't cite. A scanned entity/component/feature carries **no stored realization grade**: **Built is binary and derived** — the feature is `as_built` AND carries at least one `externalRef` of kind `code`. You report the structure you can cite `as_built`, and name what a built-but-hollow feature is still missing with an **open `task`** on it (Phase 4 carries the rule). A cited document rides `kind: "doc"` and never counts as evidence. Genuine doubt about a node is an open **question** you file.
+- views of the same records (a board, a list, a calendar, a detail page) belong to one system;
+- a capability that only acts on the records of a system (labels, filters, dependencies, an export) is a part of that system;
+- a tool that only feeds or serves a system (its access keys, its agent skills, its importer) is a part of the system it serves;
+- a part that two systems touch belongs to the one whose rules decide it. The delivery status shown on a task is decided by the deployments, so it is a part of the git connector. A task drafted in a conversation must pass the rules of the task system, so it is a part of the task system;
+- an engine that several systems call, with rules of its own (a model that finds duplicates, a scoring or sorting service), stays whole: one system, or a part of the one the team names it with. Never scatter it across its callers;
+- a step that only gets a new account started (first steps, a setup checklist, a tour) is not a specification;
+- what every product has (sign-in, accounts, organisations, teams and their access, the workspace or project that holds everything with its settings, its identifiers and its archive, the billing of the product's own plan, a back office) is a specification only when the team talks about it as a system of its own. A rule of that base that a system relies on (a number is never reused) lands as a rule of that system.
 
-### Phase 4 — Propose features + run the Realization Probe (D5)
+**The test of one specification**: could you write one page on how it works (its records and their states, its rules, what it exchanges with the other systems) that a new teammate needs before touching it? Then it is one specification. When that page would mostly say "it shows the records of another system in another way", it is a part of that system. When it needs two unrelated stories, it is two. Two systems that show on the same screen stay two: the task system and the git connector both appear on a task.
 
-Infer candidate `feature` nodes and their `realized_by` / `touches` bindings from routes/UI/folders. **Do not blanket-stamp them `planned`** — that buries the built features under the vapor, the exact failure this phase exists to prevent. The code shows how completely each feature is realized; read the whole slice.
+Past fifteen, you are listing screens or parts: merge.
 
-**The Realization Probe** answers *"does the product actually DO this, end to end?"* — read from code, **orthogonal to intent** (which stays empty until Phase 5), and it does **not** produce a grade you write into the node. Run it on each candidate feature exactly as **[references/shared/realization-probe.md](references/shared/realization-probe.md)** defines it — probe the five signals (surface · logic · persistence/IO · data realness · gating) and conclude in one of its **three actions**, never a stored grade. The half-baked / mocked / gated action is the one to watch: report the structure that exists `as_built` **and** file a `task` naming the missing side (Phase 7).
+Every string you draft is in the content language of the product (`contentLanguage`), the key excepted. You talk to the human in their own language. For each system, draft:
 
-**Built is derived server-side and binary — `as_built` AND at least one `externalRef` of kind `code`, both of them yours to report; nothing you write into a field can raise it, and there is no middle rung.** The table is in **[realization-probe](references/shared/realization-probe.md)**, the same rule **aporia-sync** re-runs per PR.
+- **`name`**: one to four words the team would say for the system, not for one of its screens: "Task system", not "Task board";
+- **`domain`**: the group it is listed under ("Commerce", "Connections"). Two to four for the whole product, each holding two systems or more. A domain with one system folds into a neighbour: never split a system to fill a domain;
+- **`key`**: `domain.key`, stable (`commerce.checkout`). Lowercase letters, digits and hyphens on each side of the dot, no accent. It is what `/aporia-work feature:commerce.checkout` names, so choose it to last;
+- **`status`**: `inProduct` when the code ships it, `planned` when it is only announced (a TODO, an empty screen, a README promise);
+- **`summary`**: one or two sentences: what the system does, then the parts a reader might look for elsewhere ("A buyer turns a cart into a paid order. Covers coupons, saved cards and the receipt.");
+- **`intention`**: why it exists, as a one-line guess the human reacts to. It is sent only when they confirm it or reword it;
+- **`body`** (optional): how the system works, in markdown: short sections, a table of states or cases. Only what the code makes certain. Never a criterion or a rule: those are clauses. Never the why: that is the intention. It is not signed. Leave it out when the summary and the clauses say enough;
+- **`criteria`** and **`rules`**: only the ones the code makes certain, across the whole system. This is where its parts land: a limit on labels is a rule of the task system, not a specification of labels. A rule is what the system refuses or guarantees at all times: a validation, a permission, a limit ("A code is used once per buyer"). A criterion is an outcome a user sees when the system works ("A valid code lowers the total before payment"). Keep the few that define the system, three to six of each is a good start. What every product does (a rate limit, a sign-in error) is not a clause of a system.
 
-The probe reads from code; the **rationale/why** is Phase 5's — never fabricate it.
+Read `references/shared/content-style.md` before writing any of these strings.
 
-### Phase 5 — Elicit (draft-first, highest-leverage only)
+### Phase 3: validate with the human
 
-Show the draft map; ask the human to *react*. Budget their attention — ask only about: features the scan couldn't infer, the *why* behind the most central nodes, the success criteria, the persona each feature serves. When they correct you ("no, it's actually X"), that correction is the meaning that normally evaporates — capture it (Phase 7) as a **decision** (+ a **tension** if it contradicts the as-built). Never silently fold an unstated *why* into the scan.
+Show the whole list as a table: name, domain, key, status, **what it covers** (the screens, views and parts folded into it), and the drafted intention. Under the table, a short list names what you left out and why (a setup checklist, the settings, a retired version). The human sees at a glance that nothing was lost, only grouped. Then give the summary, the body and the clauses of each system, under its name, or in a file you name when they are long: the human reads them before anything is written.
 
-### Phase 6 — Push structure with `aporia:apply_scan`
+Then ask, through the question tool:
 
-Push **per scope**, ≤200 nodes+edges per call (page large scopes; `completeScope: true` only on the final page of each scope). Mint ONE `sessionId` (a UUID) for the whole onboarding run and pass it — plus `observed` from git: `{ ref, sha }` (`git rev-parse --abbrev-ref HEAD` / `git rev-parse HEAD`), adding `dirty: true` if `git status --porcelain` is non-empty — on **every** page of **every** scope, so a scope's final `completeScope` page can't tombstone its earlier pages and each node/edge records the worldline it was seen at. `data.type` MUST equal the node `type`. Keys are stable identity — survive file moves; NOT the file path.
+- **the groupings you hesitated on**, at most four, the ones you are least sure of, each as its own question: the grouping you drew, and the split or the merge you weighed ("Vision and personas: one specification or two?"). For an engine several systems call, the options are its own specification and each system that could hold it. A system you are sure of needs no question;
+- **the drafted intentions, in one question**: keep the drafts, leave them all empty, or reword some. Ask system by system only for the ones they want to reword; their words become the `intention`;
+- whether anything is missing that the code does not show yet (those are `planned`).
+
+Take their corrections. When they split or merge, show the table again before you write. Drop what they drop. An intention they did not confirm is left out: an empty intention is honest, an invented one is not.
+
+### Phase 4: write the specifications
+
+One call takes at most 20 specifications, each with at most 10 criteria and 10 rules. A larger product takes several calls, split by domain, with the same `sessionId`. A clause that did not fit goes through `aporia:add_clause` afterwards. `intention`, `body`, `criteria` and `rules` are optional: leave the key out when you have none.
 
 ```jsonc
-// aporia:apply_scan input — sessionId + observed ride EVERY page of EVERY scope
-{ "scopeKey": "billing", "completeScope": true,
-  "sessionId": "3f2a…", "observed": { "ref": "main", "sha": "a1b2c3d" },
-  "nodes": [
-    { "key": "entity:billing.invoice", "type": "entity", "name": "Invoice",
-      "summary": "A bill issued to a customer", "group": "Billing",
-      "externalRefs": [{ "path": "src/billing/invoice.ts", "symbol": "Invoice" }],
-      "data": { "type": "entity", "fields": [{ "name": "total", "type": "number" }] } },
-    { "key": "component:billing-service", "type": "component", "name": "Billing Service",
-      "group": "Billing", "externalRefs": [{ "path": "src/billing/service.ts" }],
-      // sub = evidence-backed signature line (optional); domain = vendor domain on external kinds
-      "data": { "type": "component", "componentKind": "service", "sub": "invoices · 12 operations" } },
-    { "key": "feature:billing.checkout", "type": "feature", "name": "Checkout",
-      // core wired on the default path (page ↔ submitCheckout ↔ Invoice): report that structure as_built + edges.
-      // Phase 7 files a task for its one hollow seam — a hard-coded tax — naming what's still missing.
-      // intent stays "" — you observe THAT it works; the WHY is elicited in Phase 5.
-      "externalRefs": [{ "path": "src/billing/checkout-page.tsx" },
-                       { "path": "src/billing/checkout.ts", "symbol": "submitCheckout" }],
-      "data": { "type": "feature", "intent": "",
-                "successCriteria": [], "relatedPersonaIds": [] } }
-  ],
-  "edges": [
-    // depends_on always carries a ≤4-word verb label — what crosses the edge (D6)
-    { "type": "owns",        "fromKey": "component:billing-service", "toKey": "entity:billing.invoice" },
-    { "type": "realized_by", "fromKey": "feature:billing.checkout",  "toKey": "component:billing-service" },
-    { "type": "touches",     "fromKey": "feature:billing.checkout",  "toKey": "entity:billing.invoice" }
-  ] }
+// aporia:create_specs input
+{
+  "specs": [
+    {
+      "name": "Checkout",
+      "domain": "Commerce",
+      "key": "commerce.checkout",
+      "status": "inProduct",
+      "summary": "A buyer turns a cart into a paid order. Covers coupons, saved cards and the receipt.",
+      "intention": "Let a buyer pay in one go, and be rewarded without a manual discount.",
+      "body": "## States\n\n| Order | Means |\n| --- | --- |\n| Pending | The payment is not confirmed yet. |\n| Paid | The receipt is sent. |",
+      "criteria": [
+        "A valid code lowers the total before payment.",
+        "A paid order sends its receipt to the buyer."
+      ],
+      "rules": [
+        "A code is used once per buyer.",
+        "An order is charged once."
+      ]
+    }
+  ]
+}
 ```
 
-Key formats: `entity:<domain>.<name>` · `component:<name>` · `feature:<group>.<slug>`.
-Feature `data` keys are all **required** — the union won't validate without them (a missing key aborts the whole batch). `intent` is a required string: leave it `""` here and elicit it in Phase 5 (record the *why* as a decision note) — never drop the key. `successCriteria` is an array. `relatedPersonaIds` is an array of **persona ids from `aporia:pull_constitution`'s `personas[].id`** (never names or guesses) — `[]` if unknown; the link is confirmed during elicitation. Every node (features included) cites `externalRefs` — for a feature, the route/page/folder it was inferred from (D4).
-An `entity`'s `data.fields` is its **shape**, read from the schema/model — the aggregate root's own fields (D2 already folded the child rows into it). Send the **complete** list every time you push that key: `data` is written **wholesale, never merged**, so what you report *is* the entity's shape and everything you leave out is absent from the map (`fields: []` says it has none). That same wholesale write is what lets a later re-scan relearn a shape the code changed — name, summary and district stay the team's, but the field list is the code's to own. Re-pushing an entity whose shape this run didn't re-read? Carry its current `fields` forward verbatim (`aporia:search_graph` → `aporia:pull_context`). **Never reach for the other escape hatch — omitting the key — inside a `completeScope` batch: the sweep tombstones every scanned node the batch doesn't name, so "leave it out" there means "delete it".**
-A node's `name` and `summary` are map typography — a 1–4-word domain noun and a one-sentence summary; every authored field's shape is in [content-style](references/shared/content-style.md).
-Edge vocabulary: `relates_to` (entity↔entity, label carries cardinality) · `depends_on` (component↔component / feature↔feature — **label mandatory**: ≤4 words for what crosses it, conditions included, e.g. "gated: ENABLE_V4") · `owns` (component→entity) · `realized_by` (feature→component) · `touches` (feature→entity). The response reports `skippedEdges` (an endpoint key didn't resolve — push the scope that *defines* a node before one that only references it, or include both in the same batch) and, for `completeScope`, the `removed`/`removedEdges` **counts** (tombstoned because the scan no longer reports them). **A response carrying `mode: "preview"` wrote NOTHING**: the product declares a canonical ref and your `observed` is off it (a branch) or dirty — as-built truth is only written from the canonical ref on a clean tree. Never proceed as if that scan landed; onboard from the canonical ref, or hand the human the preview delta. A large run can also hit `RATE_LIMITED` — wait the returned `retryAfter`, then retry the same call.
+The answer lists what was `created` (each with its number) and what was `skipped`: a key that already exists is left untouched, so a second run converges, and a call that failed is simply sent again. A new clause on an existing specification goes through `aporia:add_clause`, with the human's yes (the aporia-work skill).
 
-### Phase 7 — Record the why with `aporia:record_notes`
+### Phase 5: hand off
 
-Capture the elicited reasoning **and** every gap the probe found, each note targeting the node(s) it's about by `key` — each a ≤60-char headline `title` over a markdown `body`, sized per [content-style](references/shared/content-style.md):
+Tell the human, with links built from the templates of Phase 0:
 
-- a **`task`** (or a **`bug`**, when the gap contradicts a decision the team already made) on every feature the Phase 4 probe found **half-baked / mocked** — naming the missing side / the mock / the `TODO`. This is the visible "what's left to build"; unlike a flag it carries a title, an owner and closure evidence. A later scan that finds the missing side landed attests it, and a human confirms. (A feature whose binding is still `planned` needs no task — the unbuilt binding already says so.)
-- a **decision** for a stated *why* (with its rationale), or a **rule** when that *why* is standing law the code must keep obeying; a **question** for an unstated one; a **tension** when a correction contradicts the as-built. A Rule is never claimable as work — if the law also implies a build, that build is a separate `task` on the node the work touches, carrying the Rule as a **secondary** note target (the node target stays `primary`, or the task lands on no page of the map).
+- how many specifications were created, and which were skipped;
+- that **every intention waits for a signature**: they sign each one on its page;
+- what you left out because the code did not say (the `planned` systems to confirm, the intentions to write), and what you folded away on purpose (a setup checklist, the settings);
+- when the human chose to go on without a framed vision: that it is still to frame, at `product.visionUrl`;
+- the next step: create a first task from a specification, and run `/aporia-work` on it;
+- what is optional from here: `/aporia-architecture-scan` draws the Architecture page from the repository, `/aporia-spec-schema` draws how one system works, `/aporia-persona-interview` adds who a system is for.
 
-```jsonc
-// aporia:record_notes input
-{ "notes": [
-  { "kind": "rule",
-    "title": "Invoices are immutable once issued",
-    "body": "Once issued, an invoice never changes. Corrections are made by issuing a separate **credit note**, never by editing the original.",
-    "rationale": "Audit and tax records require an immutable issued document.",
-    "targets": [{ "refType": "node", "ref": "entity:billing.invoice", "role": "primary" }] },
-  { "kind": "task",
-    "title": "Checkout tax is hard-coded to 0",
-    "body": "`checkout.ts` returns a hard-coded `0` tax. No real engine is wired. Checkout ships, but the tax it charges is fiction until real logic lands.",
-    "targets": [{ "refType": "node", "ref": "feature:billing.checkout", "role": "primary" }] },
-  { "kind": "question",
-    "title": "Which tax engine for Checkout?",
-    "body": "Checkout needs tax computation, but the engine isn't chosen: *build* vs. **Stripe Tax** vs. **Avalara**. Gates the EU rollout.",
-    "targets": [{ "refType": "node", "ref": "feature:billing.checkout", "role": "primary" }] }
-] }
-```
+## Acceptance checklist
 
-Notes land `provisional`/`open` for the team to curate. Don't invent rationale — if the *why* wasn't stated, it's a **question**, not a decision.
-
-## Acceptance checklist (before declaring done)
-
-- [ ] The Constitution grounded the scan FIRST — the thesis, the personas features bind to, and 3–5 testable principles exist and were authored WITH the human; an empty Constitution was filled via `aporia:upsert_thesis` / aporia-persona-mapper / `aporia:upsert_principles`, never skipped or invented from the code.
-- [ ] Passes the Recognition Test — recognizable to a founder, navigable by an engineer.
-- [ ] No node fails the plumbing filter (D1); no node type exceeds ~30 per scope without reason (D2).
-- [ ] Every node uses domain language (D3) and cites `externalRefs` (D4).
-- [ ] Every entity carries its COMPLETE current field list from the schema/model — `data` is written wholesale, so a partial list is all the shape the map will have (and a re-push of the key replaces it).
-- [ ] Every component's kind follows the D6 table; entries and externals identified per scope; every `depends_on` edge verb-labeled; `sub`/`domain` filled where evidence supports them (D6).
-- [ ] No `feature.intent` was invented — it's a human answer or left empty/open (D5).
-- [ ] The Realization Probe drove every feature to structure, not a grade: fully-wired features report their own `externalRefs` (kind `code`) plus all bindings `as_built`; every half-baked / mocked feature carries an **open task** citing its missing side; nothing-on-either-side pushed `planned: true` (D4/D5).
-- [ ] Every `aporia:apply_scan` returned `skippedEdges: 0` (or you understand each skip) — and every response **applied** (no `mode: "preview"`: a canonical-ref/dirty preview writes nothing).
-- [ ] Corrections were recorded as decisions/tensions, not silently applied.
-- [ ] Every authored string sized for its surface — node names 1–4 words, summaries one sentence, note titles ≤60-char headlines over markdown bodies ([content-style](references/shared/content-style.md)).
+- [ ] `visionFramed` is true, or the human said to go on without it.
+- [ ] Each specification is a major system, with its own records and states.
+- [ ] No screen, view or sub-feature has a specification of its own: each is covered by its system.
+- [ ] Every module and every screen of the repository has a home, or is named as left out.
+- [ ] Each key is `domain.key`, lowercase, and chosen to last.
+- [ ] No intention was invented: each is the human's words, or absent.
+- [ ] Every clause is something the code makes certain.
+- [ ] Every body was read by the human, and holds no clause and no why.
+- [ ] The human read the list before anything was written.
+- [ ] The human knows every intention is unsigned.
 
 ## Anti-patterns (reject)
 
-The raw import graph as edges · one node per file/function/table · entities named after DB tables · **an entity pushed with a partial or empty `fields` list** (`data` is written wholesale, so the omitted fields simply don't exist on the map) · invented features with confident rationale · **a mocked feature pushed `as_built` with no task naming its missing side** · **a document cited as `kind: "code"`** (it would fabricate Built) · **every feature pushed `planned` no matter how completely the code builds it** (burying built features under vapor) · "User Management", "Core", "Utils", "Settings" as features · a 200-node map "for completeness" · 40 questions instead of a draft to react to · **scanning onto an empty Constitution** (every feature left ungrounded) · **inventing the thesis or a persona from the code** instead of eliciting it from the human · an unlabeled `depends_on` between services · a model/LLM as a graph node (it rides `sub`) · an API route classified `service` instead of `trigger` (D6).
+One specification per screen, per view of the same records, per file or per endpoint. A sub-feature specified on its own (labels, dependencies, a delivery status, a setup checklist). Two systems merged because they show on the same screen. A system split to fill a domain. An intention written from the code alone. Twenty rules guessed from function names. Reading the repository on an unframed vision. Drafting the vision from the code. Writing before the human read the list. Calling `inProduct` what is only a TODO. Renaming a key on a second run.

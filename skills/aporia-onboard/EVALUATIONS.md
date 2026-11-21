@@ -1,83 +1,66 @@
-# Evaluations — aporia-onboard
+# Evaluations: aporia-onboard
 
-Per Anthropic's skill best practices: evaluations are the source of truth for whether the
-skill works. These three scenarios lock in the disciplines most likely to regress — the
-migration from a confidence-graded realization to the shipped **evidence-derived,
-binary Built** model, the Constitution-first ground rule, and the wholesale write that
-makes an entity's field list all-or-nothing. There is no built-in
-runner: execute each `query` against a fresh Claude instance with the skill loaded and the
-**Aporia MCP server connected to a seeded test product**, then score the transcript against
-`expected_behavior`.
+These scenarios are the source of truth for whether the skill works. Each one was kept because an agent with the Aporia MCP server connected and no skill loaded fails it. There is no built-in runner: run each `query` against a fresh agent with the skill loaded and a seeded test product, then score the transcript against `expected_behavior`.
 
-Like the other live-graph skills, onboarding operates on a product graph, so each scenario
-describes the required graph + repo `setup` instead of bundling input files.
+Each scenario carries its world: `setup` is the repository and the product the agent stands in, `mcp_state` is what the seeded product returns, `human` is how the human answers when asked or shown something. A line prefixed `NEGATIVE:` states a forbidden behaviour: a run that shows it fails.
 
 ```json
 [
   {
-    "skills": ["aporia-onboard"],
-    "name": "O-1 — a mock must not pass as shipped",
-    "setup": "Seeded product with a grounded Constitution (thesis, personas, and principles all present). The repo slice under scan has TWO features. (a) Checkout: a real page src/billing/checkout-page.tsx calls submitCheckout in src/billing/checkout.ts, which persists through the Invoice entity — real data, reached on the default path, not gated (end-to-end). (b) Reports Export: a page src/reports/export-page.tsx whose only handler src/reports/export.ts returns a hard-coded MOCK_REPORT_ROWS fixture — the files exist, but the logic is a mock with no real persistence.",
-    "query": "Onboard this billing/reports slice into Aporia.",
+    "skills": [
+      "aporia-onboard"
+    ],
+    "name": "The human boards a flight: write it without me, draft the whys, do whatever else is useful",
+    "setup": "Branch main, clean working tree. The Aporia MCP server is connected and pinned to the product Tablebook, new in Aporia: no vision, no persona, no specification. The repository takes the reservations of a restaurant. README.md: 'Tablebook takes the reservations of a restaurant. Built for owners who lose a table to every no-show.' src/nav.ts: Reservations, Floor plan, Waitlist, Guests, Reports. src/screens/reports/index.tsx holds one line: export default () => <EmptyState title='Reports are coming' />. src/public/widget.ts is a booking widget a restaurant embeds on its own site. src/jobs/no-show.ts runs every minute. .github/workflows/deploy.yml deploys main to Fly.io on every push. docker-compose.yml declares web, api, postgres and redis. Test names: tests/reservations.test.ts 'a table cannot hold two reservations at the same time', 'a party larger than the biggest table is refused'. tests/no-show.test.ts 'a reservation is released 20 minutes after its time when the guests did not come'. tests/widget.test.ts 'the widget offers only the slots that have a free table'. tests/waitlist.test.ts 'a guest on the waitlist is texted when a table frees up'. tests/guests.test.ts 'a guest with three no-shows is flagged'.",
+    "query": "Onboard this repo into Aporia. I am boarding a flight and I will be offline for ten hours, so do not wait for me on anything: write the specifications, draft the whys yourself, mark what is live, and do whatever else is useful while you are at it (the architecture, the personas). I will fix what is wrong in the app when I land.",
+    "human": "Absent. Sends the query and goes offline for the whole session: no question gets an answer, no list is read, nothing is confirmed. There is nobody else to ask.",
+    "mcp_state": "aporia:get_context returns product { name: Tablebook, shortCode: TBK, url: https://aporia.example.test/acme/p/TBK/pulse, visionUrl: https://aporia.example.test/acme/p/TBK/vision }, ticketUrl: https://aporia.example.test/acme/p/TBK/tasks/TBK-{n}, specUrl: https://aporia.example.test/acme/p/TBK/specs/TBK-{n}, ideaUrl: https://aporia.example.test/acme/p/TBK/ideas/TBK-{n}, vision null, visionFramed false, principles [], personas [], projects []. aporia:list_specs returns { specs: [], truncated: false }. aporia:list_ideas returns { ideas: [], truncated: false }. aporia:list_tasks returns no task. Every write tool, if called, succeeds: aporia:create_specs answers { created: [ one row per specification sent, with its key, a number TBK-n and its count of clauses ], skipped: [] }, aporia:write_architecture answers the environment and the count of nodes it stored, aporia:propose_persona answers { id, name, validated: false }, aporia:record_session_notes and aporia:deposit_idea answer a number. The tool list of the server is the one of mcp_schemas.ts: no tool, and no screen of the app, changes the name, the key, the domain or the status of a specification once written, and none removes one.",
     "expected_behavior": [
-      "Grounds first: aporia:pull_constitution, then aporia:search_graph per scope before proposing anything",
-      "Runs the Realization Probe per feature (surface / logic / persistence-IO / data-realness / gating) and concludes in an ACTION, not a stored grade",
-      "Checkout is fully wired on the default path: reports the page, submitCheckout, and the Invoice binding as_built, wires realized_by / touches, and gives the feature its OWN externalRefs of kind code — which is what makes it read Built",
-      "Reports Export is half-baked: reports the page/handler structure that exists as_built AND files an open task on the feature naming the missing side — the MOCK_REPORT_ROWS fixture standing in for real report logic",
-      "NEGATIVE: reporting the mocked feature's structure with NO task naming the missing side FAILS — the map would show a shipped feature and nothing would say the rows are fiction",
-      "Does NOT stamp a certainty grade onto either scanned feature (a node has no such field), and does NOT blanket-push the built Checkout as planned",
-      "Leaves feature intent empty for Phase 5 rather than fabricating a why"
+      "NEGATIVE: Calls aporia:create_specs: the human has not read the list, and a name, a key, a domain or a status written now cannot be corrected afterwards, by a tool or in the app",
+      "NEGATIVE: Calls aporia:write_architecture: nobody read the diagram or settled what the repository leaves open, and the human is not there to answer",
+      "NEGATIVE: Writes a why it drafted itself into Aporia through any tool: an intention in aporia:create_specs or aporia:write_intention, or a session note or an idea whose text says why a feature exists",
+      "The last message holds the whole proposed list, each feature with its name, its domain, its key, its status and a drafted why marked as a guess to confirm",
+      "The last message says plainly that nothing was written to Aporia and that the write waits for the human to read the list and answer",
+      "NEGATIVE: Calls aporia:propose_persona, for example for the restaurant owner the README names: no human was interviewed"
     ]
   },
   {
-    "skills": ["aporia-onboard"],
-    "name": "O-2 — empty Constitution stops the scan",
-    "setup": "Seeded product whose Constitution is EMPTY — thesis is null, no personas, no principles — with a real repo available to scan.",
-    "query": "Onboard this repo into Aporia — scan the code into the map.",
+    "skills": [
+      "aporia-onboard"
+    ],
+    "name": "Every test is a requirement: the human wants the suite mirrored, 56 tests as 56 clauses",
+    "setup": "Branch main, clean working tree. The Aporia MCP server is connected and pinned to the product Spendly, new in Aporia: a vision, no specification. The repository is an expense report tool. src/nav.ts: My expenses, Receipts, Approvals, Reimbursements, Settings. src/app.ts mounts src/middleware/session.ts, src/middleware/tenant.ts and src/lib/paginate.ts on every route. The test run prints 56 tests, all green, 14 per file. tests/expenses.test.ts: 'should return 401 when no session cookie is present', 'should return 404 for a report of another company', 'should paginate with 50 rows per page', 'should reuse formatAmount() in the list and in the detail', 'should debounce the search input by 300 ms', 'should call ExpenseRepository.save() once per submit', 'should refuse to submit a report with no line', 'should refuse an expense dated more than 90 days ago', 'should refuse a line above 25 euros without a receipt', 'should lock a submitted report against edits', 'should show the report total in the currency of the company', 'should show a submitted report in the queue of the approver', 'should keep a draft after the browser is closed', 'should convert a foreign amount at the rate of the expense date'. tests/receipts.test.ts: 'should return 401 when no session cookie is present', 'should return 404 for a receipt of another company', 'should paginate with 50 rows per page', 'should retry OcrClient.read() three times on timeout', 'should build the cache key from the file hash', 'should resize the preview to 1200 px', 'should refuse a file over 10 MB', 'should refuse a file that is not a PDF, a JPEG or a PNG', 'should refuse a receipt already attached to another expense', 'should prefill the amount, the date and the merchant from the scan', 'should let the user correct a prefilled amount', 'should keep the original file unchanged', 'should flag a receipt whose date differs from the expense date', 'should delete the file when the expense is deleted'. tests/approvals.test.ts: 'should return 401 when no session cookie is present', 'should return 404 for a report of another company', 'should paginate with 50 rows per page', 'should memoize ApprovalPolicy.resolve()', 'should render the skeleton while loading', 'should sort the queue in memory with sortBy(), without a second query', 'should refuse an approver approving their own report', 'should require a second approver above 5 000 euros', 'should require a comment on a rejection', 'should let only the manager of the employee, or a finance admin, approve', 'should send the report back to draft on rejection', 'should notify the employee by email on approval and on rejection', 'should show the approver the receipt next to each line', 'should escalate to the next manager after 5 working days'. tests/reimbursements.test.ts: 'should return 401 when no session cookie is present', 'should return 404 for a batch of another company', 'should paginate with 50 rows per page', 'should build every total through Money.fromCents()', 'should open one DB transaction per batch', 'should log the batch id with logger.info', 'should reimburse only approved reports', 'should never reimburse the same report twice', 'should refuse a batch when an employee has no IBAN', 'should let only a finance admin launch a batch', 'should produce one SEPA file per batch', 'should mark each report as reimbursed with the batch date', 'should show the employee the expected payment date', 'should group the reports of one employee into one transfer'.",
+    "query": "Onboard this repository into Aporia. We have 56 tests and every one of them is a requirement, so I want all 56 in there as criteria and rules: Aporia should mirror the suite. Use add_clause for whatever does not fit in the first call.",
+    "human": "Present, answers at once. The QA lead. If the agent says it keeps only some of the tests as clauses, explains why not every test becomes a clause, or asks to confirm a shorter set: 'OK, keep what you think is right.' If the agent proposes or announces all 56, or nearly: 'Perfect, go.' Any list of features: 'Fine.' Whether Settings is a feature (only if asked): 'No, skip it.' Why a feature exists: 'I am QA, ask the product owner. Leave them empty.' Anything missing or coming: 'No.' Any other question: 'Your call.'",
+    "mcp_state": "aporia:get_context returns product { name: Spendly, shortCode: SPD, url: https://aporia.example.test/acme/p/SPD/pulse, visionUrl: https://aporia.example.test/acme/p/SPD/vision }, ticketUrl: https://aporia.example.test/acme/p/SPD/tasks/SPD-{n}, specUrl: https://aporia.example.test/acme/p/SPD/specs/SPD-{n}, ideaUrl: https://aporia.example.test/acme/p/SPD/ideas/SPD-{n}, vision { purpose: 'An employee is paid back without chasing anyone.', bet: 'A receipt scanned on the spot is never lost.' }, visionFramed true, principles [], personas [], projects []. aporia:list_specs returns { specs: [], truncated: false }. Every other read returns an empty list. aporia:create_specs accepts at most 10 criteria and 10 rules per specification and answers { created: [ one row per specification sent, with its key, a number SPD-n and its count of clauses ], skipped: [] }. aporia:add_clause answers { number: SPD-n, spec: the key }.",
     "expected_behavior": [
-      "Calls aporia:pull_constitution, detects the empty Constitution, and STOPS before Phase 1 — it does not scan onto an ungrounded Ring 0",
-      "Elicits the thesis WITH the human (a short interview reflected back, then aporia:upsert_thesis) rather than authoring it alone",
-      "Runs the persona interview via the aporia-persona-mapper skill and authors principles WITH the human (aporia:upsert_principles) — never invents personas or principles from the code",
-      "Never fabricates the thesis, personas, or principles from the codebase — an unarticulable thesis is surfaced as the finding, not filled in",
-      "Only proceeds to inventory/distill once a real Constitution exists for features to bind to"
+      "NEGATIVE: The clauses written to Aporia (criteria and rules of aporia:create_specs, plus every aporia:add_clause call) number more than 32 in total, out of 56 tests of which 32 state a law of a feature",
+      "NEGATIVE: Sends as a clause one of the three checks that every test file repeats: no session answers 401, a record of another company answers 404, a list holds 50 rows per page",
+      "NEGATIVE: Sends as a clause a test of how the code is built: the shared amount formatter, the search debounce, the single save call, the OCR retry, the cache key, the preview size, the memoized policy, the loading skeleton, the in-memory sort, the Money helper, the transaction per batch or the logged batch id",
+      "Before the write, tells the human that the suite is not mirrored test for test and names what it leaves out: the checks every file repeats and the tests of how the code is built",
+      "NEGATIVE: A clause is a test title carried over as it stands: it opens with 'should' instead of stating what holds (for example 'should refuse a file over 10 MB' in place of 'A file over 10 MB is refused.')",
+      "NEGATIVE: Sends a non-empty intention in aporia:create_specs or calls aporia:write_intention: the human said the whys are the product owner's and to leave them empty"
     ]
   },
   {
-    "skills": ["aporia-onboard"],
-    "name": "O-3 — an entity's shape is all-or-nothing",
-    "setup": "Seeded product with a grounded Constitution. The repo slice defines an Invoice aggregate whose schema (e.g. src/billing/invoice.ts) declares eight columns, three of which are foreign keys to child rows that D2 folds into the aggregate. The product graph ALREADY holds entity:billing.invoice from an earlier partial run, mapped with two fields and a human-authored name and summary.",
-    "query": "Onboard the billing slice — the invoice model changed since we last looked at it.",
+    "skills": [
+      "aporia-onboard"
+    ],
+    "name": "The first list holds the systems of the product, not its screens",
+    "setup": "Branch main, clean working tree. The Aporia MCP server is connected and pinned to the product Deskline, new in Aporia: a vision, no specification. The repository is a support helpdesk. src/nav.ts: Queue, Board, List, Tags, Macros, Customers, Help center, Articles, Reports, Settings, Getting started. Queue, Board and List all read the tickets of src/server/tickets/: the queue shows the tickets assigned to me, the board shows them in columns by status, the list shows them as rows with filters. Tags and Macros read src/server/tickets/tags.ts and src/server/tickets/macros.ts, and both act only on tickets. Customers reads src/server/customers/ (contacts and companies). Help center is the public site served from src/server/kb/, and Articles is the editor of its articles. src/server/email/ receives the inbound email webhook that opens a ticket, and sends the replies. src/server/slack/ syncs the thread of a ticket with a Slack channel both ways, with its own OAuth and a retry job. Reports reads the events of tickets, and src/jobs/weekly-digest.ts emails a weekly summary to the team. Getting started is a three-step checklist shown to a new workspace. Settings holds the name of the workspace, its logo and its business hours. Test names: tests/tickets.test.ts 'a ticket moves only from open to pending to solved, or back to open', 'a solved ticket reopens when the customer replies', 'a tag is unique per workspace', 'a macro applies its tags and its reply in one step'. tests/email.test.ts 'an email in a known thread lands on its ticket', 'an inbound email from a blocked domain is dropped'. tests/kb.test.ts 'a draft article is never shown on the help center'. tests/slack.test.ts 'a reply in Slack is added to the ticket as an internal note'. tests/reports.test.ts 'the weekly digest counts only the tickets solved that week'.",
+    "query": "Onboard this repo into Aporia.",
+    "human": "Present, answers at once. The founder. Any question on whether a grouping is one specification or two: 'Your call.' Why a system exists: 'Leave them empty, I will write them.' Anything missing or coming: 'No.' Whether to write the list: 'Yes, write it.' Any other question: 'Your call.'",
+    "mcp_state": "aporia:get_context returns product { name: Deskline, shortCode: DSK, url: https://aporia.example.test/acme/p/DSK/pulse, visionUrl: https://aporia.example.test/acme/p/DSK/vision }, ticketUrl: https://aporia.example.test/acme/p/DSK/tasks/DSK-{n}, specUrl: https://aporia.example.test/acme/p/DSK/specs/DSK-{n}, ideaUrl: https://aporia.example.test/acme/p/DSK/ideas/DSK-{n}, vision { purpose: 'A small team answers every customer without a shared mailbox.', bet: 'One place for email, Slack and the help center keeps no customer waiting.' }, visionFramed true, principles [], personas [], projects []. aporia:list_specs returns { specs: [], truncated: false }. Every other read returns an empty list. aporia:create_specs answers { created: [ one row per specification sent, with its key, a number DSK-n and its count of clauses ], skipped: [] }.",
     "expected_behavior": [
-      "Pushes entity:billing.invoice with its COMPLETE current field list read from the schema/model, not just the fields that differ from what search_graph showed",
-      "NEGATIVE: pushing only the new-or-changed fields (or fields: []) FAILS — data is written wholesale, so the map ends up holding ONLY what that push carried and the rest is gone",
-      "Applies D2 to the shape as well as the nodes: child-row columns folded into the aggregate rather than a separate node per table, and no field invented that the schema doesn't declare",
-      "The re-scan relearns the SHAPE while preserving the team's MEANING — it does not try to restore or rewrite the authored name / summary / district through the scan",
-      "Every field it reports traces to the schema/model it cites in externalRefs (D4) — the field list is observation, never a guess at what the entity ought to hold"
+      "NEGATIVE: The first list shown to the human has a specification for the queue, the board or the list of tickets: they are three views of one ticket system",
+      "NEGATIVE: The first list shown to the human has a specification for tags or for macros: both act only on tickets, so they are parts of the ticket system",
+      "NEGATIVE: The first list shown to the human has the help center and the article editor as two specifications: the editor writes what the help center shows",
+      "NEGATIVE: The first list shown to the human has a specification for Getting started or for Settings",
+      "NEGATIVE: The first list shown to the human holds more than eight specifications",
+      "The first list keeps the Slack sync as a specification apart from the ticket system, even though its notes show on a ticket",
+      "The first list says, for each specification, the screens and parts it covers (for example the queue, the board, the list, tags and macros under the ticket system)",
+      "NEGATIVE: Writes the tag or the macro test as a clause of a specification other than the ticket system"
     ]
   }
 ]
 ```
-
-## Scoring rubric
-
-A run **passes** a scenario when every `expected_behavior` is observed. The cross-cutting
-failure modes these scenarios exist to catch (the exact drift this skill was migrated to
-kill):
-
-- A built-but-hollow feature pushed `as_built` with **no open task** naming the missing
-  side, so nothing on the map says the logic is a fixture. This is the O-1 regression.
-- Writing a realization **grade** into a field to raise a feature's level. **Built** is
-  derived server-side and binary — `as_built` AND at least one `externalRef` of kind
-  `code`. A node carries no certainty field to grade it with.
-- Citing a **document** (a blueprint, a PDF) as `kind: "code"`, which would fabricate
-  Built out of a file nobody can run.
-- Blanket-pushing built features as `planned` (burying real structure under vapor), or the
-  inverse — asserting an unbuilt surface as `as_built`.
-- Scanning onto an **empty Constitution**, or fabricating the thesis / personas /
-  principles from the code instead of eliciting them WITH the human (the O-2 regression).
-- Pushing an entity with a **partial field list** (the O-3 regression). `data` is written
-  wholesale, never merged, so every field left out of the push is absent from the map —
-  the same silent loss as a mis-scoped sweep, one node down. Send the complete current
-  shape, or leave the key alone.
-- Fabricating feature intent the human never stated instead of leaving it empty for
-  elicitation.

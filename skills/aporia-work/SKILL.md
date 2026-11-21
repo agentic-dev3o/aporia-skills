@@ -1,107 +1,150 @@
 ---
 name: aporia-work
 description: >-
-  Works ONE Aporia inbox ticket end-to-end: pulls and claims it as a work order
-  with aporia:pull_item (bug / task / directive decision — the kinds that carry
-  a verdict), zooms its map targets, implements on a ticket-named branch that
-  uses the product's own prefix from pull_constitution (a product coded NEW
-  branches new-8-coupon-fix), then closes the loop with the aporia-sync skill so
-  scan evidence resolves the item. An epistemic ticket (idea / question /
-  tension) refuses the claim and becomes an adjudication conversation with the
-  human instead of a guess. Use for /aporia-work NEW-8, any product-prefixed
-  ticket, working on ticket 8, picking up a ticket from the inbox, or
-  implementing an Aporia inbox item.
+  Works ONE Aporia task or specification end to end: takes the task with
+  aporia:take_task, which returns its work order (the task, the intention of
+  its specification, its criteria and its rules in force, the principles and
+  the language of the product), implements on a branch named after its number, settles any gap between the code and the specification with
+  the human in the session, then reports back with aporia:report_task so the
+  team reads it in Activity. Understands both forms the app copies: a task
+  number, like /aporia-work NEW-8, and a specification key, like /aporia-work
+  feature:billing.invoices. Use for working a task, picking up a task from the
+  board, implementing a specification, or reporting what a session did on a
+  task.
 ---
 
 # Aporia work
 
-The ticket id a human reads in the Inbox (`NEW-8` — your product's prefix + the number; `aporia:pull_constitution` returns it as `product.shortCode`, and it is NEVER carried over from another product) is the **whole association** between triage and a coding session — no export, no sync tool, no copy-pasted description. You pull the item by that handle, the map tells you where its work lives in the code, and when you're done a **scan closes it with evidence** — not your say-so.
+A task in Aporia is a **work order**. The number a human reads on the board (`NEW-8`: the product's prefix and the number) is the whole link between the board and a coding session. You read the task by that number, its specification tells you the contract, and when you are done you **report back** where the team reads it.
 
-You reach Aporia through the **MCP server only** (pinned to one product; call tools fully-qualified as `aporia:*`). If the tools aren't available, stop and tell the user to configure the Aporia MCP server.
+You reach Aporia through the **MCP server only**, pinned to one product. Call its tools fully qualified, as `aporia:*`. If the tools are not available, stop and ask the user to connect the Aporia MCP server.
 
-## The hard line
+**A question to the human goes through the tool your agent has for asking one** (`AskUserQuestion` in Claude Code): one decision per question, with the answers you expect as its options. A question written in the middle of a message gets lost. Without such a tool, or when nobody is there to answer (a scheduled run), the questions close your message, numbered, one decision each.
 
-**Judgment stays human.** You build only what carries a verdict. If the pull is refused because the item is an idea, question, or tension, you do NOT pick a side and code it — you surface the judgment to the human, help them register the Decision (they can do it from the item's action zone in the Inbox, or you propose one with `aporia:record_notes` for them to confirm), and only then pull the follow-up work.
+## The hard lines
+
+- **The specification is the contract.** Its rules always hold. Its criteria say what done means. You code against them, you do not reinterpret them.
+- **A gap is settled here, with the human.** When the code and the specification disagree, or the specification is silent, you ask the human in this session. Only what they accept reaches Aporia, as a criterion or a rule.
+- **You never sign, never abrogate and never delete.** An intention is signed by a human in Aporia. A clause is abrogated by a human in Aporia. A clause written by mistake is deleted, once abrogated, by an owner or an admin in Aporia. There is no tool for any of them, on purpose.
+- **You never say a task is done.** Humans own Ready, Blocked and In progress. Git owns On staging and In production. A task is in production when the deployment says so, never because a pull request merged. You report, a human or production closes.
+
+## What you were given
+
+| The command | What it is | Your first call |
+|---|---|---|
+| `/aporia-work NEW-8` or `/aporia-work 8` | a task to work | `aporia:take_task { task: "NEW-8" }` |
+| `/aporia-work feature:billing.invoices` | a specification | `aporia:get_spec { spec: "feature:billing.invoices" }` |
+| "look at NEW-8", "what does NEW-8 ask?" | a task to read, not to work | `aporia:get_task { task: "NEW-8" }` |
+
+The bare number always works. A prefix that is not this product's is refused: never carry one over from another product.
+
+**`sessionId`**: the first write of the session returns one. Pass it unchanged on every later write that takes one. Activity then shows what the session wrote as a single message.
 
 ## Workflow
 
-The phases, in order:
-
 ```
 Work progress:
-- [ ] Phase 0 — Ground: aporia:pull_constitution
-- [ ] Phase 1 — Pull + claim the ticket: aporia:pull_item { ticket, claim: true }
-- [ ] Phase 2 — Zoom: pull_context on node targets; feature_gaps_spec if feature-anchored
-- [ ] Phase 3 — Branch `new-8-slug` style (the exact name Phase 1's guidance gave you); plan against the decisions/Rules
-- [ ] Phase 4 — Implement + test
-- [ ] Phase 5 — Close the loop: run the aporia-sync skill (scan + resolve_items)
+- [ ] Phase 1: take the task and read its work order (aporia:take_task)
+- [ ] Phase 2: branch and plan against the contract
+- [ ] Phase 3: implement, and settle gaps with the human
+- [ ] Phase 4: report back (aporia:report_task)
 ```
 
-### Phase 0 — Ground
+### Phase 1: take the task and read its work order
 
-`aporia:pull_constitution` once — the thesis, principles, and personas your change must honor. It also returns `product.shortCode`: **this product's ticket prefix**. Every ticket you write, and the branch you cut, use that prefix — never one you saw on another product.
+`aporia:take_task { task }` starts the work and returns the work order in the same call (`workOrder: false` when you read it already with `aporia:get_task`, to get only the task, `taken` and `branch`), with the `sessionId` of the session when you had none yet. The task moves to **In progress** and the human behind your key becomes its owner. Do not read it with `aporia:get_task` first: that would fetch the same work order twice.
 
-### Phase 1 — Pull + claim the ticket
+The work order holds everything the work needs:
 
-`aporia:pull_item { ticket: "8", claim: true }` — the **bare number always works**, whatever this product's prefix is, so prefer it over guessing a prefixed form. `claim: true` stamps an attributed, advisory claim — Aporia records and shows the acting human behind your key (and your client as the instrument), never a lock — so the Inbox shows the ticket **In progress** and a parallel session sees who's on it. Claiming also **assigns** the ticket to that human, unless the product turned auto-assign off in its settings; that assignment is durable, so it outlives the claim. You get:
+- **`attention`**, first: what to act on before you build, said in plain words (an unsigned intention, a dependency still open, a teammate who owns the task, bodies to read in `aporia:get_spec`). Act on each line;
 
-- **item** — kind, title, markdown body, rationale, priority, `claimedAt` (how it closes derives from its kind);
-- **targets** — the map spots it's about: node targets carry the stable `key` and `externalRefs` (the files to read first); a bug's note target carries the **decision it traces to** (the intent the code contradicts — your fix closes THAT gap, nothing more);
-- **guidance** — branch convention and the next tool to call;
-- **attachments** — the artifacts hanging off this ticket, as METADATA (`attachmentId`, `filename`, `fileType`, `size`, `createdAt`). A ticket whose real spec is an attached file says so here — read it with `aporia:read_attachment { attachmentId }` before you plan, or you will build from a body that only references it;
-- **enforcedBy** / **enforcedByTruncated** — on a plain READ of a **rule** (claim omitted): the open items TARGETING that Rule — the work implementing the law — and whether that list is incomplete. The claim route carries neither field: a Rule refuses the claim, and the same docket arrives NAMED IN THE REFUSAL MESSAGE, which is what turns the refusal from a dead end into a hop (see the table below);
-- **previousClaimedAt** — the prior claim's timestamp (`null` if none; the claim route only — a plain read always reports `null`);
-- **item.owner** / **previousOwner** — who the ticket is assigned to after your claim, and who held it before (`null` if nobody). `previousOwner` non-null and not you means **your claim took a teammate's ticket** — say so to the human rather than working it silently. A product with auto-assign off answers with `owner` unchanged.
+- **`task`**: title, `url` (link it when you name the task to the human), `stage` (`closed` when a human closed it), summary, body, `owner` (a name) and `mine`, `blockedReason`, labels, `fields` (the custom fields a human set, as `{ name, value }` pairs), `project`, the idea it comes from, `createdAt` and `lastActivityAt`;
+- **`spec`**: the contract it serves, with its `url`, or null. `intention.text` says why the feature exists, and `intention.signed` says whether a human signed that wording. `body` holds its details in markdown, or null. A long one comes as `bodyExcerpt`, its start, with `bodyTruncated: true` and `body: null`: an excerpt is never sent back as a body, which would erase the rest. It is not signed. `criteria` and `rules` are the clauses in force, each with its number. A criterion carries `report`: what the latest report of a task said of it (`state`, `by`), or null. A criterion another task already covered stays covered when you report it `notVerified`. A clause carries its text and, when short, its `body`: an exception or a precision that governs with the text. `bodyTruncated: true` says its body was left out here (long, or past what one work order carries): `aporia:get_spec { spec, clause }` reads it whole, and it may be a short rule that governs;
+- **`waitsFor`**: the tasks it still waits for, neither in production nor closed, with their stage: a real dependency, say so before you start;
+- **`pullRequests`** and **`release`**: what is already linked, and the release that shipped it;
+- **`messages`**: the last five of its room, newest first, the newest whole. A teammate who sent the task back says why here: read them before you plan. `messagesTruncated: true` says older ones are on the task's page (`url`), for the human to open when they matter;
+- **`files`**: the files of its room, as handles. Read one with `aporia:read_attachment { attachmentId }` when the real brief is a file. A text comes paged: call again with `offsetBytes` set to the returned `nextOffset`, and an optional `length`, until `truncated` is false. An image comes back as an image you can see;
+- **`branch`**: the name to give your branch;
+- **`contentLanguage`** and **`principles`**: the language of everything you write into Aporia, and the principles in force. Every change answers to them.
 
-**Reading an attachment.** `aporia:read_attachment` takes the `attachmentId` from a listing — never a URL, never an id you assembled. Markdown/HTML come back as UTF-8 text, paged: when `truncated` is true, call again with `offsetBytes` set to the returned `nextOffset` (and an optional `length` to take smaller bites) until it is false. A PNG or JPEG comes back as a real image you can SEE — a screenshot of a broken surface, or a mockup of one to build, reads directly. A PDF comes back whole as base64. Either binary is all-or-nothing (paging is text-only). A big image is not simply refused: when the app stored a downscaled copy it comes back instead, flagged `downscaled`, so read a large screenshot rather than skipping it. Only an over-ceiling PDF, or an image with no downscaled copy, is refused — that one the human opens in the app.
+The work order replaces `aporia:get_context` for this session. Call `aporia:get_context` only when you need what it alone holds: the vision and the personas. A new task's `project` needs no read: an unknown one is refused with the known ones.
 
-**Claim collision:** a FRESH `previousClaimedAt` (within roughly two hours) means someone is likely mid-flight — stop and surface it to the human before continuing; double-working produces rival diffs. Stale or `null` → proceed. The claim is etiquette, never a lock: it locks nobody out, and you never hand-clear it. The **assignment** it makes is a separate, durable fact — only a human unassigns, from the item's rail.
+**A teammate owns the task.** `aporia:take_task` refuses it with `CONFLICT` and names them. Tell the human whose task it is. Call again with `takeOver: true` only when the human says to take it. `taken.tookOver` then says you did, and `taken.previousOwner` whose it was: say so in your report.
 
-**Reading is not working.** A plain read (`claim` omitted) resolves **any** ticket — a non-workable item comes back with `workOrder: false`, a not-a-work-order notice, its comment thread, and (when closed) `resolvedBy`, the successor to read first. Use that to understand context; never build from it. Only `claim: true` — the working route — refuses:
+**The task waits for a task still open.** `aporia:take_task` refuses it with `CONFLICT` and names what it waits for, with its stage. Tell the human. Call again with `anyway: true` only when the human says to start it anyway. One refusal names both reasons when a teammate also owns it: send `takeOver: true` and `anyway: true` together, once the human agreed to both.
+
+Other refusals, and your move:
 
 | Refusal | Your move |
 |---|---|
-| idea | Tell the human it needs adoption; if they adopt, a Decision is registered and that becomes the work |
-| question / tension | Adjudicate WITH the human — present the sides, they decide; register the Decision, then pull the follow-up |
-| rule | Standing law, never work — but the refusal MESSAGE names its **enforcement docket**: pull one of the tickets it names and work THAT. Says *no open item implements it*? Then the law implies work nobody filed — put it to the human and file it as a task on the node the work touches (`primary`) carrying the Rule as a **secondary** note target. Says the docket is *UNKNOWN* (the scan hit its cap)? File nothing yet — search the inbox for items targeting this ticket first, or you duplicate work already on the board. Either way, honor the Rule in whatever you build |
-| already closed | Nothing to do; if the user disagrees with the closure, that's a reopen conversation, not a build |
+| the task is blocked | A human set it waiting, with a reason. Show the reason. A human unblocks it |
+| the task seems done | It waits for a human to close it or send it back. Nothing to take |
+| git owns the task | It is on staging or in production. There is nothing to take |
+| the task is closed | Nothing to do. Reopening is the human's call |
 
-### Phase 2 — Zoom
+**An unsigned intention is a draft.** Tell the human, and ask whether to build against it or to wait for the signature. Never treat it as approved.
 
-`aporia:pull_context { key }` on each node target — its data, edges, neighbors, the open notes (decisions and Rules you must honor carry their `shortId`), and `attachments`: the node's own files, plus each note's, again as metadata to read on purpose. If a target is a **feature**, compile the real spec first: `aporia:feature_gaps_spec { key }` — it returns the unbuilt gap, the decisions to honor, `openWork` (open bugs AND tasks) to close along the way, and a readiness verdict (a `blocked` spec names why in its blockers — read them, they route differently).
+**The body explains, it does not govern.** It is not signed and holds no rule. When it disagrees with a criterion or a rule, the clause wins, and the gap is settled with the human.
 
-**Blocked on unapproved intent? That is the qualification moment, not a dead end.** No human has said what the feature is FOR, and you never invent it. Ask the human in this session, in their words: what is this feature for, and what does done look like? Record what they approve with `aporia:apply_scan { planned: true, nodes: [{ key, type: "feature", name, data: { type: "feature", intent, successCriteria, relatedPersonaIds: [] } }] }` — your key names them as the approver, the push fills an empty intent, and it never overwrites a why a human already wrote. Then re-run `feature_gaps_spec` and proceed. Blocked on **open questions** instead → back to Phase 1's refusal table (adjudicate with the human, register the Decision).
+**A task without a specification** is plain work: its title and body are the brief.
 
-**A ticket that names a milestone, not a node.** The team tags its own map — `mvp`, `v1`, `Q2` — and those tags are readable: `aporia:search_graph { tag: "v1" }` returns every node in that bucket, whatever its type, case-insensitively. Use it when the work is scoped to a milestone rather than to one target, so the bucket the team drew on the map is the bucket you actually work. A tag is a human's plan and never a verdict: it tells you WHAT is in scope, never that something is decided.
+**You were given a specification, not a task.** Read it with `aporia:get_spec`. It lists its open `tasks`. Pick the task with the human, or create one for the work you are about to do with `aporia:create_task { title, spec, take: true }`, which takes it in the same call. `aporia:list_tasks { spec }` shows every open task of the specification, each row with the open tasks it `waitsFor`.
 
-**Read each decision's `comments` before you build from its body.** Decisions and `openWork` arrive newest-first, each carrying the tail of its thread (`moreComments` means older ones exist — `aporia:pull_item { ticket }` for the whole thread). An item stays open and in force while part of its text goes stale, so a comment saying *"we no longer deploy this to that service"* is the current truth even though the body still says otherwise. Where the thread and the body disagree, the newer comment wins. If you confirm from the code that the body itself is wrong, correct it with `aporia:update_item { ticket, body }` — the next agent reads the body, not your session.
+**You were given nothing, or asked what to take next.** `aporia:list_tasks { takeable: true }` lists the Ready tasks `aporia:take_task` starts now, the next one first (the human's or unowned, waiting for nothing open). Propose its first row to the human, then take it. To look wider, its filters combine: `mine: true` for the human's own, `stage` for one stage or several (`production` for what the latest releases shipped), `project`, `label`, `type`, and `query` for words of a title or a summary; `takeable` reads Ready alone and takes no other `stage`. When `truncated` is true, narrow, or send `next` back unchanged as the whole arguments of `aporia:list_tasks`: it carries the `after` cursor and the filters. Do not build it yourself.
 
-### Phase 3 — Branch + plan
+### Phase 2: branch and plan
 
-Branch as **`<code>-<n>-<short-slug>`** — `<code>` is this product's `shortCode` lowercased, so a product coded NEW branches `new-8-coupon-persistence`. Phase 1's `guidance` spells the exact branch name; use it verbatim rather than composing one — the PR-time sync parses the ticket number back out of the branch to know **which items this diff intends to close**, and checks their evidence first. Plan against what Phase 2 returned: the decisions are constraints, not suggestions; an unbuilt binding is the shape of the work.
+Name the branch exactly as `branch` says (`new-8-persist-the-coupon`). A pull request joins its task by that number, in its branch or its title, and that link is what moves the task to staging and to production. A branch with no number orphans the diff.
 
-### Phase 4 — Implement + test
+Plan against the contract: every rule holds in the diff, every criterion is covered, and the `principles` of the work order are respected.
 
-**Tier the work first.** A one-file fix, config change, or pattern replication → implement solo, right here. Work that is cross-layer, has UI/UX taste at stake, or is high blast-radius → if a graded-build harness skill is installed (e.g. `agent-team`), hand the build to it instead of implementing solo: Phase 0–2's pull IS its contract grounding (don't re-pull — the constitution, gap spec, decisions-to-honor, and `openWork` materialize into its contract, with this ticket as the item ref), and its passing build closes the loop with the same aporia-sync as Phase 5 — don't run the sync twice. No such skill installed → implement solo with care proportional to the blast radius.
+Read the code the task touches before you write any. Then restate the plan to the human in three lines at most: what changes, which rule or criterion it serves, what stays untouched. Write it in your own words, from what you read, never the task's wording copied back. A misreading caught here costs a sentence. When the human corrects it, the correction is the plan.
 
-**Building a UI surface? Read the palette first.** `aporia:fetch_design_tokens` returns the product's tokens as one generic `design-tokens.css` — plain custom properties carrying both appearances in a single read — so what you build is set in the product's own colors, type and shape instead of ones you picked. It emits no framework dialect on purpose: you are in the repo, so read its real config and map the properties into its idiom. If the response says nothing has been authored yet, say so rather than treating a neutral starter set as the team's palette. Only write back with `aporia:upsert_design_tokens` when the human has actually settled a value — that write lands live.
+### Phase 3: implement, and settle gaps
 
-Normal engineering discipline applies (project rules, tests, lint). Stay inside the ticket: a bug fix closes the traced decision's gap — scope creep belongs in new items (`aporia:record_notes`), not in this diff. Mid-flight findings ABOUT this ticket — progress, evidence, a surprise in its scope — go to its thread with `aporia:comment_item { ticket, body }`, never a new item; diff narration stays in the PR body. If the work proves that an **open** item's own text is wrong (this ticket's or one it depends on), correct the text with `aporia:update_item { ticket, body }` and comment the reasoning — never supersede a live item to fix a line inside it, which would close work this PR may still be about to close.
+Before the first write, read `references/shared/content-style.md` for the shape of every string you write: clauses, tasks, intentions, block reasons and the report. It also says which language to write in.
 
-### Phase 5 — Close the loop
+Normal engineering discipline applies: the project's own rules, its tests, its lint. Stay inside the task.
 
-Run the **aporia-sync** skill (install it alongside this one — this phase depends on it): it re-scans the touched scopes (`apply_scan`), then calls `aporia:resolve_items` citing what the code now proves. A **bug or directive decision** closes on that evidence, provenance reading *scan-verified*; a **task** is attested and a human confirms it in one click — either way the evidence lands.
+**When the code and the specification disagree**, stop and ask the human, with the two readings side by side. Then write only the outcome they accept, and prefer the smallest change. A clause in force that nearly says it is reworded, never doubled:
 
-**Pre-merge, the close is a two-step.** If the product declares a canonical ref and you're still on your `<code>-<n>` branch, that sync **attests** the ticket rather than closing it: the item stays **open** with a *"fix ready — awaiting merge"* badge (the fix is proven, just not on the trunk yet). The ticket **closes** when the same sync runs **after the merge, on the canonical ref** — which drops the attestation and marks it resolved. So opening the PR earns the badge; merging and re-syncing on the trunk earns the close. Either transition (attest or close) also clears the Phase 1 claim — the evidence-backed `resolve_items` is what drops the "In progress" stamp, never a hand-edit. It does **not** clear the assignment the claim made: who is mid-flight and who owns the work are two different facts, and only a human changes the second. An item that is a teammate's to close is attested the same way — the sync cites your evidence, the item stays open, and they confirm in one click. Record any decisions/questions/deviations the work surfaced (the aporia-session-notes discipline).
+- a new clause: `aporia:add_clause { spec, kind, text }`. `kind` is `criterion` (what must be true to call it done) or `rule` (what always holds). It is in force at once, under its own number;
+- a clause to reword: `aporia:revise_clause { clause, text }`. A new version under the same number, the old wording kept;
+- an intention to rewrite: `aporia:write_intention { spec, text }`. It arrives **unsigned**, even over a signed one. Tell the human it waits for their signature.
+- the details under the intention: `aporia:write_intention { spec, body }`, in markdown, with the human's yes. `body` replaces the whole body: start from the one `aporia:get_spec` returned and send it back complete. `null` clears it. The body is not signed, so writing it alone keeps the signature.
+
+What you find and nobody decided is not a clause: it is an idea or a note. Work outside this task is a new task, once `aporia:list_tasks` shows the board does not hold it yet: `aporia:create_task { title, summary, spec, sessionId }`, with `project` (the app calls it a list) when it belongs to one: an unknown one is refused with the known ones. The aporia-report skill routes all of it at the end of the session. Its custom fields are a human's to set, in Aporia.
+
+**Some tasks ship no code**: the work is the outcome itself, a clause to reword or a choice to make. Settle it with the human, write what they accept, and report.
+
+**You are stuck on a human**: `aporia:update_task { task, stage: "blocked", blockedReason }`, naming who or what the task waits for: a block without a reason is refused. From then on the task is a human's: a human unblocks it. You may still correct its `blockedReason` (never empty it) and its other fields, never its column. `waitsFor` adds a task this one depends on.
+
+### Phase 4: report back
+
+Keep to the shape of `references/shared/content-style.md`. Then `aporia:report_task { task, summary, body, criteria, sessionId }`:
+
+- `summary`: what was done, in one or two sentences a teammate understands without the diff;
+- `body`: what changed, what was verified and how, what was not verified, what is left. It closes with **what a human should read**: the one to three places where a mistake would cost the most (access rights, a migration, money, data that leaves the product). Leave that line out when nothing in the diff carries that risk.
+- `criteria`: the state of each criterion of the specification of the task, one line per criterion, each `{ criterion, state }`. `criterion` is its number, as the work order listed it. `state` is `covered` (you verified it holds: a test, a run by hand), `notCovered` (you verified it does not hold yet) or `notVerified` (you did not verify it). Give every criterion its line: `covered` or `notCovered` only for what you verified, `notVerified` for the others, never `covered`. Name only the criteria of this task's specification, each once: a rule, an abrogated criterion or a criterion of another specification refuses the whole report. Leave `criteria` out when the task serves no specification.
+
+The page of the specification shows, for each criterion, its latest state and the task that said it.
+
+It lands in the room of the task and in Activity. It does not close the task and does not move it. A longer document (a rendered report, a screenshot of the result) goes with `aporia:attach_file { task, filename, fileType, content }`: `fileType` is `markdown`, `html`, `pdf`, `png` or `jpeg`, and the content is sent inline (base64 for the binary types).
+
+Tell the human what happens next: the pull request carries the task to staging and to production, and production closes it. A task that ships no code is closed by a human with "Done". "To verify" is a human's call for a task whose pull request was never attached.
 
 ## Acceptance checklist
 
-- [ ] The item was pulled by ticket — never guessed from a title or re-transcribed by hand.
-- [ ] A refused pull became a human adjudication, not a coded guess.
-- [ ] The branch is named `<code>-<n>-…` (this product's code, lowercased) so the PR sync can match it.
-- [ ] Every decision/Rule from the targets' context is honored in the diff.
-- [ ] The loop was closed by scan evidence (`resolve_items`), not by editing the item's status.
+- [ ] The task was read by its number, never guessed from a title.
+- [ ] An unsigned intention was named as a draft to the human.
+- [ ] The plan was restated to the human, in your own words, before the first line of code.
+- [ ] Every rule of the specification holds in the diff, and every criterion is covered or reported as not covered.
+- [ ] The report gives each criterion of the specification its state, and calls `covered` only what was verified.
+- [ ] Every gap was settled with the human, and only the accepted outcome was written.
+- [ ] The branch carries the number the work order gave.
+- [ ] The report says what was verified, not only what was written, and names what was not.
+- [ ] The report points a human at what deserves their eyes, when the diff carries that risk.
 
 ## Anti-patterns (reject)
 
-Working a question/tension by picking the answer yourself · building an open idea ("it was in the inbox") · hand-declaring an item done instead of letting the sync cite evidence · a branch with no ticket number, orphaning the diff from the item it closes · fixing three unrelated things under one bug's ticket.
+Building against an unsigned intention without saying so. Coding before the plan was restated. Picking a side in a gap and coding it. Writing a clause the human never saw. A second clause beside one that nearly says the same. Saying the task is done. A branch without the number. Fixing three unrelated things under one task. Inventing a link to Aporia. Writing a body the human never read. Hiding a rule in the body. Reporting a criterion as `covered` without having checked it.
