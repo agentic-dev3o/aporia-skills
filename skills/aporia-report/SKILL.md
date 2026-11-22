@@ -76,7 +76,7 @@ Every piece of work the session did belongs to a task. Find it before you write:
 - the number is in the branch name: read it with `aporia:get_task { task }`, or `aporia:get_task { task, workOrder: false }` when you only need its stage and pull requests;
 - no number: look for it with `aporia:list_tasks`. `mine: true` lists the tasks of the human behind your key, `query` searches the words of a title or a summary, `spec` the tasks of one specification, `stage` one stage or several (`production` for what already shipped: work done before need not be done again).
 
-Still nothing: the work had no task. Say so to the human and propose one, linked to its specification with `spec` when it serves one, and to its `project` (the app calls it a list; an unknown one is refused with the known ones) when it belongs to one. Set `noCode: true` when no code will ship for it: a human then closes it by hand.
+Still nothing: the work had no task. Say so to the human and propose one, linked to its specification with `spec` when it serves one, and to its `project` (the app calls it a list; an unknown one is created, and `projectCreated` names it: tell the human) when it belongs to one. Set `noCode: true` when no code will ship for it: a human then closes it by hand.
 
 ### Phase 2: extract
 
