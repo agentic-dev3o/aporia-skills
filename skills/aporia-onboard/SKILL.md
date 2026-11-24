@@ -100,7 +100,7 @@ Read `references/shared/content-style.md` before writing any of these strings.
 
 ### Phase 3: validate with the human
 
-Show the whole list as a table: name, domain, key, status, **what it covers** (the screens, views and parts folded into it), and the drafted intention. Under the table, a short list names what you left out and why (a setup checklist, the settings, a retired version). The human sees at a glance that nothing was lost, only grouped. Then give the summary, the body and the clauses of each system, under its name, or in a file you name when they are long: the human reads them before anything is written.
+Show the whole list as a table: name, domain, key, status, **what it covers** (the screens, views and parts folded into it), the personas it serves, and the drafted intention. Under the table, a short list names what you left out and why (a setup checklist, the settings, a retired version). The human sees at a glance that nothing was lost, only grouped. Then give the summary, the body and the clauses of each system, under its name, or in a file you name when they are long: the human reads them before anything is written.
 
 Then ask, through the question tool:
 
@@ -112,7 +112,7 @@ Take their corrections. When they split or merge, show the table again before yo
 
 ### Phase 4: write the specifications
 
-One call takes at most 20 specifications, each with at most 10 criteria and 10 rules. A larger product takes several calls, split by domain, with the same `sessionId`. A clause that did not fit goes through `aporia:add_clause` afterwards. `intention`, `body`, `criteria` and `rules` are optional: leave the key out when you have none.
+One call takes at most 20 specifications, each with at most 10 criteria and 10 rules. A larger product takes several calls, split by domain, with the same `sessionId`. A clause that did not fit goes through `aporia:add_clause` afterwards. `intention`, `body`, `criteria`, `rules` and `personas` are optional: leave the key out when you have none. `personas` names who the system serves, exactly as `aporia:get_context` listed them: an unknown name refuses the whole call and names the known ones. Name only the links the human confirmed in Phase 3.
 
 ```jsonc
 // aporia:create_specs input
@@ -133,7 +133,8 @@ One call takes at most 20 specifications, each with at most 10 criteria and 10 r
       "rules": [
         "A code is used once per buyer.",
         "An order is charged once."
-      ]
+      ],
+      "personas": ["Buyer in a hurry"]
     }
   ]
 }

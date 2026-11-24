@@ -6,10 +6,12 @@ description: >-
   how badly the situation hurts, and the five lines of the situation (when it
   arises, what they do today, what they want, what it would change, what stands
   in the way), written with aporia:propose_persona. The persona lands as a
-  hypothesis for a human to validate in Aporia. Use for
+  hypothesis for a human to validate in Aporia, then is linked to the
+  specifications it serves with aporia:link_personas. Use for
   /aporia-persona-interview, adding a persona, capturing who feels a pain and
   how badly, turning a fuzzy "our user" into a typed record, or separating the
-  buyer from the user. Never invents a persona from code.
+  buyer from the user, or linking a persona to a specification. Never invents a
+  persona from code.
 ---
 
 # Aporia persona interview
@@ -111,6 +113,17 @@ Show the whole record. Ask: "Is this the person? What is wrong in it?" Fix it. T
 
 The answer says `validated: false`. Tell the human: the persona is in Vision as a hypothesis, and they validate it there once they have checked it against a real person.
 
+### Step 6: link it to the specifications it serves
+
+Ask which specifications this person is for: propose the ones whose intention speaks of their situation, read with `aporia:list_specs`. On the human's yes, link each one by the persona's name:
+
+```jsonc
+// aporia:link_personas input
+{ "spec": "reports.weekly", "add": ["Site manager on Friday"] }
+```
+
+`remove` unlinks a persona the human says a specification does not serve. A persona is named exactly as `aporia:get_context` lists it: an unknown name refuses the whole call and names the known ones. The same call also links an existing persona, without an interview, when that is all the human asks.
+
 ## Acceptance checklist
 
 - [ ] The persona came from an interview, not from the code.
@@ -119,6 +132,7 @@ The answer says `validated: false`. Tell the human: the persona is in Vision as 
 - [ ] `painSeverity` matches what they do today.
 - [ ] No existing persona already describes this person.
 - [ ] The human confirmed the record before it was proposed, and knows it waits for their validation.
+- [ ] Every specification it was linked to, the human named or accepted.
 
 ## Anti-patterns (reject)
 
