@@ -71,7 +71,7 @@ The work order replaces `aporia:get_context` for this session. Call `aporia:get_
 
 **A teammate owns the task.** `aporia:take_task` refuses it with `CONFLICT` and names them. Tell the human whose task it is. Call again with `takeOver: true` only when the human says to take it. `taken.tookOver` then says you did, and `taken.previousOwner` whose it was: say so in your report.
 
-**The task waits for a task still open.** `aporia:take_task` refuses it with `CONFLICT` and names what it waits for, with its stage. Tell the human. Call again with `anyway: true` only when the human says to start it anyway. One refusal names both reasons when a teammate also owns it: send `takeOver: true` and `anyway: true` together, once the human agreed to both.
+**The task waits for a task still open.** `aporia:take_task` refuses it with `CONFLICT` and names what it waits for, with its stage. Tell the human. Call again with `anyway: true` only when the human says to start it anyway. When the human says the dependency is wrong, remove it with `aporia:update_task { task, removeWaitsFor }` once they agreed, then take the task. One refusal names both reasons when a teammate also owns it: send `takeOver: true` and `anyway: true` together, once the human agreed to both.
 
 Other refusals, and your move:
 
@@ -112,12 +112,13 @@ Normal engineering discipline applies: the project's own rules, its tests, its l
 - a clause to reword: `aporia:revise_clause { clause, text }`. A new version under the same number, the old wording kept;
 - an intention to rewrite: `aporia:write_intention { spec, text }`. It arrives **unsigned**, even over a signed one. Tell the human it waits for their signature.
 - the details under the intention: `aporia:write_intention { spec, body }`, in markdown, with the human's yes. `body` replaces the whole body: start from the one `aporia:get_spec` returned and send it back complete. `null` clears it. The body is not signed, so writing it alone keeps the signature.
+- a rename, a summary or a status of a specification is not an intention: `aporia:propose_spec_update` proposes it as a plan a human applies in Aporia. When that tool is not listed, offer the human `/aporia-spec-update`.
 
 What you find and nobody decided is not a clause: it is an idea or a note. Work outside this task is a new task, once `aporia:list_tasks` shows the board does not hold it yet: `aporia:create_task { title, summary, spec, sessionId }`, with `project` (the app calls it a list) when it belongs to one: an unknown one is created, and `projectCreated` names it to tell the human. The aporia-report skill routes all of it at the end of the session. Its custom fields are a human's to set, in Aporia.
 
 **Some tasks ship no code**: the work is the outcome itself, a clause to reword or a choice to make. Settle it with the human, write what they accept, and report.
 
-**You are stuck on a human**: `aporia:update_task { task, stage: "blocked", blockedReason }`, naming who or what the task waits for: a block without a reason is refused. From then on the task is a human's: a human unblocks it. You may still correct its `blockedReason` (never empty it) and its other fields, never its column. `waitsFor` adds a task this one depends on.
+**You are stuck on a human**: `aporia:update_task { task, stage: "blocked", blockedReason }`, naming who or what the task waits for: a block without a reason is refused. From then on the task is a human's: a human unblocks it. You may still correct its `blockedReason` (never empty it) and its other fields, never its column. `waitsFor` adds a dependency, `removeWaitsFor` removes one.
 
 ### Phase 4: report back
 

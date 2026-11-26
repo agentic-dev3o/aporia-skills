@@ -4,8 +4,9 @@ disable-model-invocation: true
 description: >-
   Updates the specifications of a product that already has some, after its
   repository or the way Aporia models it changed: reads the code again, maps
-  every specification, clause and open task onto the systems the product has
-  today (keep, fold into a system, retire), has the human read the table, then
+  every specification, clause and open task (or those of the one specification
+  the human names) onto the systems the product has today (keep, fold into a
+  system, retire), has the human read the table, then
   proposes it with aporia:propose_spec_update as one plan a human reviews and
   applies in Aporia. Nothing changes before a human applies it. Use for
   /aporia-spec-update, rescanning a product, cleaning up old specifications,
@@ -44,6 +45,8 @@ Update progress:
 - [ ] Phase 5: hand off
 ```
 
+**One specification only.** When the human names a specification, map that one alone: read the code it covers, map its clauses and its open tasks, and leave the rest of the product out of the plan. The `note` names it ("Rescan of TBK-12 Reservations"), so the human tells it apart from another plan waiting.
+
 ### Phase 0: what exists
 
 `aporia:get_context` once: the vision, `contentLanguage` (the language of every string you write) and `specUrl`. Then `aporia:list_specs`, and `aporia:get_spec` on each specification to read its clauses in force. `aporia:list_tasks` gives the open tasks, the ones in To verify included.
@@ -70,7 +73,9 @@ Every specification, clause and open task lands in exactly one place.
 
 A system's `clauses` also carries its new clauses (`kind` and `text`, no number): only what the code makes certain and nothing already says.
 
-**Bodies.** A specification that is replaced or retired takes its body with it: carry what still holds into the body of the new system. A system that stays keeps its name, its intention and its body, and the plan refuses them on its line: name it in the hand-off when its body needs rewriting.
+**Bodies.** A specification that is replaced or retired takes its body with it: carry what still holds into the body of the new system. A system that stays keeps its key, its domain, its intention and its body, and the plan refuses them on its line: name it in the hand-off when its intention or its body needs rewriting.
+
+**Name, summary, status.** A system that stays takes on its line the `name` and the `summary` a teammate would give it today, in the content language: a V1 name translated is a rename, proposed here, never written directly. Give `status` (`inProduct` or `planned`) when the code says otherwise than the specification. The human sees each one before and after, and applies or unticks it on its own. Leave out a value the specification already holds.
 
 **Open tasks.** Each task of a replaced specification goes in its system's `tasks`. A task in To verify whose work shipped goes in `closeTasks`. An open task that no longer makes sense (its screen left the product) goes in `deleteTasks`. A task with code that is not in To verify cannot be closed by hand: delete it or leave it.
 
@@ -88,7 +93,7 @@ Take their corrections and show the table again when it moved. An intention they
 
 ### Phase 4: propose the plan
 
-One call carries the whole plan, at most 40 systems and 1,500 lines. A newer proposal supersedes the rescan still waiting (an update proposed after a release waits beside it), so never split a plan into two calls: when it is larger, propose the first domains, let the human apply them, then propose the rest.
+One call carries the whole plan, at most 40 systems and 1,500 lines. Several plans wait side by side as long as they touch nothing in common: a plan that touches a specification, a key, a clause or a task of a plan still waiting is refused with that plan's `reviewUrl`. Tell the human to apply or dismiss that one on its page, then propose again. A plan larger than the cap is split by domain, into plans that share nothing.
 
 ```jsonc
 // aporia:propose_spec_update input
@@ -129,12 +134,13 @@ Tell the human:
 
 ## Acceptance checklist
 
-- [ ] Every specification of the product is a system, replaced, or retired.
+- [ ] Every mapped specification is a system, replaced, or retired: all of the product's, or the one the human named.
 - [ ] Every clause in force of a replaced or retired specification moves or is abrogated.
 - [ ] A clause that still holds keeps its number.
+- [ ] A system that stays carries the name and the summary it goes by today, and its status when the code contradicts it.
 - [ ] Every string is in the content language.
 - [ ] The human read the table before the plan was proposed.
 
 ## Anti-patterns (reject)
 
-A new clause that repeats one you could move. Abrogating a clause that still holds. Retiring a specification whose system exists without naming it in `replaces`. A plan split into two calls. Proposing before the human read the table. Writing any change directly (aporia:create_specs, aporia:add_clause, aporia:write_intention) instead of proposing it.
+A new clause that repeats one you could move. Abrogating a clause that still holds. Retiring a specification whose system exists without naming it in `replaces`. Two plans that touch the same specification. Proposing before the human read the table. Writing any change directly (aporia:create_specs, aporia:add_clause, aporia:write_intention) instead of proposing it.
